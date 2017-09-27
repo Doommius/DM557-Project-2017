@@ -18,3 +18,7 @@ mynetwork
 mynetwork.*
 libsubnet.a
 mytest.*
+
+.idea/
+
+.directory
