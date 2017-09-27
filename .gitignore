@@ -10,13 +10,13 @@
 
 network
 
-lib/
+#lib/
 
-include/
+#include/
 
 mynetwork
 mynetwork.*
-libsubnet.a
+#libsubnet.a
 mytest.*
 
 .idea/
