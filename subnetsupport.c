@@ -507,7 +507,7 @@ void Log(LogBuf b, const char *data, int length)
     }
 
   /* renser logdata for kontroltegn */
-  len_logdata = clean_ld(data, length, &logdata);
+//  len_logdata = clean_ld(data, length, &logdata);
 
   LOCK( &b->lock , Log ); 
 
@@ -548,7 +548,7 @@ void SyncLog(const char *loginfo, int length)
   UNLOCK( &SC.systemlock, SyncLog );
 
   /* renser logdata for kontroltegn */
-  len_logdata = clean_ld(loginfo, length, &logdata);
+//  len_logdata = clean_ld(loginfo, length, &logdata);
 
   buffer.type    = data;
   buffer.station = ThisStation;

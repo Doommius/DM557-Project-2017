@@ -537,7 +537,7 @@ void stop_ack_timer(int station) {
 int main(int argc, char *argv[]) {
     StationName = argv[0];
     ThisStation = atoi(argv[1]);
-    printf(ThisStation);
+//    printf(ThisStation);
 
     if (argc == 3)
         printf("Station %d: arg2 = %s\n", ThisStation, argv[2]);
