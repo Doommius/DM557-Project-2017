@@ -96,7 +96,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     if (fk == DATA) {
         start_timer(frame_nr);
     }
-    stop_ack_timer();        /* no need for separate ack frame */
+    stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
 
 /* Fake network/upper layers for station 1
@@ -284,7 +284,7 @@ void selective_repeat() {
         arrived[i] = false;
         timer_ids[i] = -1;
     }
-    ack_timer_id = -1;
+    ack_timer_id[ThisStation] = -1; //TODO
 
 
     events_we_handle = frame_arrival | timeout | network_layer_ready;
@@ -327,7 +327,7 @@ void selective_repeat() {
                     if ((r.seq != frame_expected) && no_nak) {
                         send_frame(NAK, 0, frame_expected, out_buf);
                     } else {
-                        start_ack_timer();
+                        start_ack_timer(ThisStation); //TODO
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
                         /* Frames may be accepted in any order. */
@@ -340,7 +340,7 @@ void selective_repeat() {
                             arrived[frame_expected % NR_BUFS] = false;
                             inc(frame_expected);        /* advance lower edge of receiver's window */
                             inc(too_far);        /* advance upper edge of receiver's window */
-                            start_ack_timer();        /* to see if (a separate ack is needed */
+                            start_ack_timer(ThisStation);        /* to see if (a separate ack is needed */ //TODO
                         }
                     }
                 }
@@ -363,10 +363,10 @@ void selective_repeat() {
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
                 logLine(info, "Message from timer: '%s'\n", (char *) event.msg);
 
-                if (timer_id == ack_timer_id) { // Ack timer timer out
+                if (timer_id == ack_timer_id[ThisStation]) { // Ack timer timer out TODO
                     logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                     free(event.msg);
-                    ack_timer_id = -1; // It is no longer running
+                    ack_timer_id[ThisStation] = -1; // It is no longer running TODO
                     send_frame(ACK, 0, frame_expected, out_buf);        /* ack timer expired; send ack */
                 } else {
                     int timed_out_seq_nr = atoi((char *) event.msg);
@@ -514,7 +514,7 @@ void start_ack_timer(int station) {
         char *msg;
         msg = (char *) malloc(100 * sizeof(char));
         strcpy(msg, "Ack-timer");
-        ack_timer_id = SetTimer(act_timer_timeout_millis, (void *) msg);
+        ack_timer_id[station] = SetTimer(act_timer_timeout_millis, (void *) msg);
         logLine(debug, "Ack-timer startet med id %d\n", ack_timer_id);
     }
 }
@@ -528,13 +528,14 @@ void stop_ack_timer(int station) {
         logLine(trace, "timer %d stoppet. msg: %s \n", ack_timer_id, msg);
         free(msg);
     }
-    ack_timer_id = -1;
+    ack_timer_id[station] = -1;
 }
 
 
 int main(int argc, char *argv[]) {
     StationName = argv[0];
     ThisStation = atoi(argv[1]);
+    printf(ThisStation);
 
     if (argc == 3)
         printf("Station %d: arg2 = %s\n", ThisStation, argv[2]);
