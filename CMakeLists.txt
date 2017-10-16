@@ -48,7 +48,7 @@ set(SOURCE_FILES
         transmit_error.c
         Wait.c)
 
-set(SOURCE_FILES_mynetwork rdt.c rdt.h debug.c debug.h fifoqueue.h fifoqueue.c subnetsupport.c subnetsupport.h subnet.h priqueue.c priqueue.h signal.c)
+set(SOURCE_FILES_mynetwork rdt.c rdt.h debug.c debug.h fifoqueue.h fifoqueue.c subnetsupport.c subnetsupport.h subnet.h priqueue.c priqueue.h Signal.c subnet.c)
 
 
 

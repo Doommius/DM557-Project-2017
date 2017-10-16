@@ -18,19 +18,27 @@
 
 #define MAX_PKT 8        /* determines packet size in bytes */
 
-typedef enum {false, true} boolean;        /* boolean type */
+typedef enum {
+    false, true
+} boolean;        /* boolean type */
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
-typedef struct {char data[MAX_PKT];} packet;        /* packet definition */
-typedef enum {DATA, ACK, NAK} frame_kind;        /* frame_kind definition */
+typedef struct {
+    char data[MAX_PKT];
+} packet;        /* packet definition */
+typedef enum {
+    DATA, ACK, NAK
+} frame_kind;        /* frame_kind definition */
 
 
 typedef struct {        /* frames are transported in this layer */
-  frame_kind kind;        /* what kind of a frame is it? */
-  seq_nr seq;           /* sequence number */
-  seq_nr ack;           /* acknowledgement number */
-  packet info;          /* the network layer packet */
-  int sendTime;
-  int recvTime;
+    frame_kind kind;        /* what kind of a frame is it? */
+    seq_nr seq;           /* sequence number */
+    seq_nr ack;           /* acknowledgement number */
+    packet info;          /* the network layer packet */
+    int sendTime;
+    int recvTime;
+    int src;
+    int dst;
 } frame;
 
 /* init_frame fills in default initial values in a frame. Protocols should
@@ -79,6 +87,7 @@ void disable_network_layer(void);
  * get_timedout_seqnr() returns the sequence number of the frame that timed out.
  */
 void init_max_seqnr(unsigned int o);
+
 unsigned int get_timedout_seqnr(void);
 
 /* Macro inc is expanded in-line: Increment k circularly. */

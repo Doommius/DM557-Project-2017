@@ -327,7 +327,7 @@ void selective_repeat() {
                     if ((r.seq != frame_expected) && no_nak) {
                         send_frame(NAK, 0, frame_expected, out_buf);
                     } else {
-                        start_ack_timer(ThisStation); //TODO
+                        start_ack_timer(r.dst); //TODO
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
                         /* Frames may be accepted in any order. */
@@ -340,7 +340,7 @@ void selective_repeat() {
                             arrived[frame_expected % NR_BUFS] = false;
                             inc(frame_expected);        /* advance lower edge of receiver's window */
                             inc(too_far);        /* advance upper edge of receiver's window */
-                            start_ack_timer(ThisStation);        /* to see if (a separate ack is needed */ //TODO
+                            start_ack_timer(r.dst);        /* to see if (a separate ack is needed */ //TODO
                         }
                     }
                 }
@@ -363,10 +363,10 @@ void selective_repeat() {
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
                 logLine(info, "Message from timer: '%s'\n", (char *) event.msg);
 
-                if (timer_id == ack_timer_id[ThisStation]) { // Ack timer timer out TODO
+                if (timer_id == ack_timer_id[r.dst]) { // Ack timer timer out TODO
                     logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                     free(event.msg);
-                    ack_timer_id[ThisStation] = -1; // It is no longer running TODO
+                    ack_timer_id[r.dst] = -1; // It is no longer running TODO
                     send_frame(ACK, 0, frame_expected, out_buf);        /* ack timer expired; send ack */
                 } else {
                     int timed_out_seq_nr = atoi((char *) event.msg);
@@ -459,6 +459,8 @@ int from_physical_layer(frame *r) {
 
     logLine(trace, "Receiving from subnet in station %d\n", ThisStation);
     FromSubnet(&source, &dest, (char *) r, &length);
+    r->dst = dest;
+    r->src = source;
     print_frame(r, "received");
 
     return 0;
