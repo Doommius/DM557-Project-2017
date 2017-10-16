@@ -82,23 +82,23 @@ void packet_to_string(packet *data, char *buffer) {
 
 static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, packet buffer[], frame* r) {
     /* Construct and send a data, ack, or nak frame. */
-    frame s;        /* scratch variable */
+    //frame s;        /* scratch variable */
 
-    s.kind = fk;        /* kind == data, ack, or nak */
+    r->kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
-        s.info = buffer[frame_nr % NR_BUFS];
+        r->info = buffer[frame_nr % NR_BUFS];
     }
-    s.seq = frame_nr;        /* only meaningful for data frames */
-    s.ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
+    r->seq = frame_nr;        /* only meaningful for data frames */
+    r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
     if (fk == NAK) {
         no_nak = false;        /* one nak per frame, please */
     }
 
     //TODO Make dynamic
     if (r->dest != 0){
-        to_physical_layer(&s, r->dest);
+        to_physical_layer(r);
     } else {
-        to_physical_layer(&s, r->dest);        /* transmit the frame */
+        to_physical_layer(r);        /* transmit the frame */
     }
 
     if (fk == DATA) {
@@ -279,12 +279,12 @@ void selective_repeat() {
     Init_lock(network_layer_lock);
 
 
-    enable_network_layer();  /* initialize */
-    ack_expected = 0;        /* next ack expected on the inbound stream */
-    next_frame_to_send = 0;        /* number of next outgoing frame */
-    frame_expected = 0;        /* frame number expected */
-    too_far = NR_BUFS;        /* receiver's upper window + 1 */
-    nbuffered = 0;        /* initially no packets are buffered */
+    enable_network_layer();             /* initialize */
+    ack_expected = 0;                   /* next ack expected on the inbound stream */
+    next_frame_to_send = 0;             /* number of next outgoing frame */
+    frame_expected = 0;                 /* frame number expected */
+    too_far = NR_BUFS;                  /* receiver's upper window + 1 */
+    nbuffered = 0;                      /* initially no packets are buffered */
 
     logLine(trace, "Starting selective repeat %d\n", ThisStation);
 
@@ -324,6 +324,8 @@ void selective_repeat() {
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS]); /* fetch new packet */
+
+                r.source = ThisStation;
                 r.dest = 1;
                 send_frame(DATA, next_frame_to_send, frame_expected, out_buf, &r);        /* transmit the frame */
                 inc(next_frame_to_send);        /* advance upper window edge */
@@ -372,10 +374,10 @@ void selective_repeat() {
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
                 logLine(info, "Message from timer: '%s'\n", (char *) event.msg);
 
-                if (timer_id == ack_timer_id[0]) { // Ack timer timer out TODO
+                if (timer_id == ack_timer_id[r.source]) { // Ack timer timer out TODO
                     logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                     free(event.msg);
-                    ack_timer_id[0] = -1; // It is no longer running TODO
+                    ack_timer_id[r.source] = -1; // It is no longer running TODO
                     send_frame(ACK, 0, frame_expected, out_buf, &r);        /* ack timer expired; send ack */
                 } else {
                     int timed_out_seq_nr = atoi((char *) event.msg);
@@ -478,17 +480,15 @@ int from_physical_layer(frame *r) {
 }
 
 
-void to_physical_layer(frame *s, int station) {
+void to_physical_layer(frame *s) {
     int send_to;
 
-    /*
-    if (ThisStation == 1) {
-        send_to = 2;
+
+    if (ThisStation == s->dest) {
+        send_to = s->source;
     } else {
-        send_to = 1;
+        send_to = s->dest;
     }
-*/
-    send_to = station;
     print_frame(s, "sending");
 
     ToSubnet(ThisStation, send_to, (char *) s, sizeof(frame));
