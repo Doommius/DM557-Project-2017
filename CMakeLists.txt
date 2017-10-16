@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.6)
 project(dm557_projekt_2017)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -48,4 +48,10 @@ set(SOURCE_FILES
         transmit_error.c
         Wait.c)
 
+set(SOURCE_FILES_mynetwork rdt.c rdt.h debug.c debug.h fifoqueue.h fifoqueue.c subnetsupport.c subnetsupport.h subnet.h priqueue.c priqueue.h)
+
+
+
 add_executable(dm557_projekt_2017 ${SOURCE_FILES})
+
+add_executable(mynetwork ${SOURCE_FILES_mynetwork})

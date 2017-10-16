@@ -59,10 +59,10 @@ void start_timer(seq_nr k);
 void stop_timer(seq_nr k);
 
 /* Start an auxiliary timer and enable the ack_timeout event. */
-void start_ack_timer(void);
+void start_ack_timer(int station);
 
 /* Stop the auxiliary timer and disable the ack_timeout event. */
-void stop_ack_timer(void);
+void stop_ack_timer(int station);
 
 /* Allow the network layer to cause a network_layer_ready event. */
 void enable_network_layer(void);
