@@ -94,6 +94,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
         no_nak = false;        /* one nak per frame, please */
     }
 
+    printf("SENDING FROM: %d TO: %d\n", r->source, r->dest);
     //TODO Make dynamic
     if (r->dest != 0){
         to_physical_layer(r);
@@ -298,7 +299,7 @@ void selective_repeat() {
     events_we_handle = frame_arrival | timeout | network_layer_ready;
 
 
-
+    /*
     // If you are in doubt how the event numbers should be, comment in this, and you will find out.
     printf("%#010x\n", 1);
     printf("%#010x\n", 2);
@@ -311,7 +312,7 @@ void selective_repeat() {
     printf("%#010x\n", 256);
     printf("%#010x\n", 512);
     printf("%#010x\n", 1024);
-
+    */
 
     while (true) {
         // Wait for any of these events
@@ -326,7 +327,7 @@ void selective_repeat() {
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS]); /* fetch new packet */
 
                 r.source = ThisStation;
-                r.dest = 1;
+                r.dest = 2;
                 send_frame(DATA, next_frame_to_send, frame_expected, out_buf, &r);        /* transmit the frame */
                 inc(next_frame_to_send);        /* advance upper window edge */
                 break;
@@ -334,6 +335,7 @@ void selective_repeat() {
             case frame_arrival:        /* a data or control frame has arrived */
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
                 if (r.kind == DATA) {
+                    printf("RECEIVED FRAME FROM: %d TO: %d\n", r.source, r.dest);
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak) {
                         send_frame(NAK, 0, frame_expected, out_buf, &r);
@@ -499,7 +501,7 @@ void start_timer(seq_nr k, int station) {
 
     printf("Starting timer for %d\n", station);
     timer_ids[k % NR_BUFS][station] = SetTimer(frame_timer_timeout_millis, (void *) msg);
-    printf("Array %d\n", timer_ids[k % NR_BUFS][station]);
+
     logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station], msg);
 
 }
