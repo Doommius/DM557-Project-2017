@@ -94,7 +94,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
         no_nak = false;        /* one nak per frame, please */
     }
 
-    printf("SENDING FROM: %d TO: %d\n", r->source, r->dest);
+    //printf("SENDING FROM: %d TO: %d\n", r->source, r->dest);
     //TODO Make dynamic
     if (r->dest != 0){
         to_physical_layer(r);
@@ -322,20 +322,26 @@ void selective_repeat() {
 
         switch (event.type) {
             case network_layer_ready:        /* accept, save, and transmit a new frame */
+                //printf("Case 1\n");
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS]); /* fetch new packet */
 
                 r.source = ThisStation;
-                r.dest = 2;
+                if (ThisStation == 2){
+                    r.dest = 1;
+                } else {
+                    r.dest = 2;
+                }
                 send_frame(DATA, next_frame_to_send, frame_expected, out_buf, &r);        /* transmit the frame */
                 inc(next_frame_to_send);        /* advance upper window edge */
                 break;
 
             case frame_arrival:        /* a data or control frame has arrived */
+                //printf("Case 2\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
                 if (r.kind == DATA) {
-                    printf("RECEIVED FRAME FROM: %d TO: %d\n", r.source, r.dest);
+                    //printf("RECEIVED FRAME FROM: %d TO: %d\n", r.source, r.dest);
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak) {
                         send_frame(NAK, 0, frame_expected, out_buf, &r);
@@ -371,6 +377,7 @@ void selective_repeat() {
                 break;
 
             case timeout: /* Ack timeout or regular timeout*/
+                //printf("Case 3\n");
                 // Check if it is the ack_timer
                 timer_id = event.timer_id;
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
@@ -499,7 +506,7 @@ void start_timer(seq_nr k, int station) {
     msg = (char *) malloc(100 * sizeof(char));
     sprintf(msg, "%d", k); // Save seq_nr in message
 
-    printf("Starting timer for %d\n", station);
+    //printf("Starting timer for %d\n", station);
     timer_ids[k % NR_BUFS][station] = SetTimer(frame_timer_timeout_millis, (void *) msg);
 
     logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station], msg);
