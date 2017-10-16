@@ -60,7 +60,7 @@ FifoQueueEntry *nicebuffer;
 
 int ack_timer_id[16];
 int ack_timer_size = 16;
-int timer_ids[NR_BUFS];
+int timer_ids[NR_BUFS][1];
 boolean no_nak = false; /* no nak has been sent yet */
 
 static boolean between(seq_nr a, seq_nr b, seq_nr c) {
@@ -95,7 +95,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     }
     to_physical_layer(&s);        /* transmit the frame */
     if (fk == DATA) {
-        start_timer(frame_nr);
+        start_timer(frame_nr, 0);
     }
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
@@ -283,7 +283,7 @@ void selective_repeat() {
 
     for (i = 0; i < NR_BUFS; i++) {
         arrived[i] = false;
-        timer_ids[i] = -1;
+        timer_ids[i][0] = -1;
     }
     ack_timer_id[ThisStation] = -1; //TODO
 
@@ -353,7 +353,7 @@ void selective_repeat() {
                 while (between(ack_expected, r.ack, next_frame_to_send)) {
                     logLine(debug, "Advancing window %d\n", ack_expected);
                     nbuffered = nbuffered - 1;                /* handle piggybacked ack */
-                    stop_timer(ack_expected % NR_BUFS);     /* frame arrived intact */
+                    stop_timer(ack_expected % NR_BUFS, 0);     /* frame arrived intact */
                     inc(ack_expected);                        /* advance lower edge of sender's window */
                 }
                 break;
@@ -483,54 +483,54 @@ void to_physical_layer(frame *s) {
 }
 
 
-void start_timer(seq_nr k) {
-
+void start_timer(seq_nr k, int station) {
+    printf("START TIMER! Station: %d, ThisStation %d\n", station, ThisStation);
     char *msg;
     msg = (char *) malloc(100 * sizeof(char));
     sprintf(msg, "%d", k); // Save seq_nr in message
 
-    timer_ids[k % NR_BUFS] = SetTimer(frame_timer_timeout_millis, (void *) msg);
-    logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0], timer_ids[1], timer_ids[2], timer_ids[3], msg);
+    timer_ids[k % NR_BUFS][station] = SetTimer(frame_timer_timeout_millis, (void *) msg);
+    logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station], msg);
 
 }
 
 
-void stop_timer(seq_nr k) {
+void stop_timer(seq_nr k, int station) {
     int timer_id;
     char *msg;
-
-    timer_id = timer_ids[k];
+    printf("STOP TIMER! Station: %d, ThisStation %d\n", station, ThisStation);
+    timer_id = timer_ids[k][station];
     logLine(trace, "stop_timer for seq_nr %d med id=%d\n", k, timer_id);
 
     if (StopTimer(timer_id, (void *) &msg)) {
         logLine(trace, "timer %d stoppet. msg: %s \n", timer_id, msg);
         free(msg);
     } else {
-        logLine(trace, "timer %d kunne ikke stoppes. Måske er den timet ud?timer_ids=[%d, %d, %d, %d] \n", timer_id, timer_ids[0], timer_ids[1], timer_ids[2], timer_ids[3]);
+        logLine(trace, "timer %d kunne ikke stoppes. Måske er den timet ud?timer_ids=[%d, %d, %d, %d] \n", timer_id, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station]);
     }
 }
 
 //TODO implement station
 void start_ack_timer(int station) {
-    //printf("START! Station: %d, ThisStation %d\n", station, ThisStation);
-    if (ack_timer_id == -1) {
+    //printf("START ACK! Station: %d, ThisStation %d\n", station, ThisStation);
+    if (ack_timer_id[station] == -1) {
         logLine(trace, "Starting ack-timer\n");
         char *msg;
         msg = (char *) malloc(100 * sizeof(char));
         strcpy(msg, "Ack-timer");
         ack_timer_id[station] = SetTimer(act_timer_timeout_millis, (void *) msg);
-        logLine(debug, "Ack-timer startet med id %d\n", ack_timer_id);
+        logLine(debug, "Ack-timer startet med id %d\n", ack_timer_id[station]);
     }
 }
 
 //TODO implement station
 void stop_ack_timer(int station) {
     char *msg;
-    //printf("STOP! Station: %d, ThisStation %d\n", station, ThisStation);
+    //printf("STOP ACK! Station: %d, ThisStation %d\n", station, ThisStation);
 
     logLine(trace, "stop_ack_timer\n");
-    if (StopTimer(ack_timer_id, (void *) &msg)) {
-        logLine(trace, "timer %d stoppet. msg: %s \n", ack_timer_id, msg);
+    if (StopTimer(ack_timer_id[station], (void *) &msg)) {
+        logLine(trace, "timer %d stoppet. msg: %s \n", ack_timer_id[station], msg);
         free(msg);
     }
     ack_timer_id[station] = -1;
@@ -541,9 +541,14 @@ int main(int argc, char *argv[]) {
     StationName = argv[0];
     ThisStation = atoi(argv[1]);
 //    printf(ThisStation);
+    //TODO change neighbors
     for(int i = 0; i < ack_timer_size; i++){
         ack_timer_id[i] = 0;
     }
+    for (int j = 0; j < NR_BUFS; j++) {
+        timer_ids[j][0] = 0;
+    }
+
     if (argc == 3)
         printf("Station %d: arg2 = %s\n", ThisStation, argv[2]);
 
