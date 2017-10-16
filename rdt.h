@@ -24,6 +24,9 @@ typedef enum {
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
 typedef struct {
     char data[MAX_PKT];
+
+    int source;
+    int dest;
 } packet;        /* packet definition */
 typedef enum {
     DATA, ACK, NAK
