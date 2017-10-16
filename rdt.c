@@ -480,18 +480,14 @@ int from_physical_layer(frame *r) {
 }
 
 
-void to_physical_layer(frame *s) {
-    int send_to;
+void to_physical_layer(frame *r) {
 
-
-    if (ThisStation == s->dest) {
-        send_to = s->source;
+    if (ThisStation == r->dest) {
+        ToSubnet(ThisStation, r->source, (char *) r, sizeof(frame));
     } else {
-        send_to = s->dest;
+        ToSubnet(ThisStation, r->dest, (char *) r, sizeof(frame));
     }
-    print_frame(s, "sending");
-
-    ToSubnet(ThisStation, send_to, (char *) s, sizeof(frame));
+    print_frame(r, "sending");
 }
 
 
