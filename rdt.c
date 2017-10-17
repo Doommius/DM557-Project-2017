@@ -60,7 +60,7 @@ FifoQueueEntry *nicebuffer;
 
 int ack_timer_id[16];
 int ack_timer_size = 16;
-int timer_ids[NR_BUFS][1];
+int timer_ids[NR_BUFS][NR_BUFS];
 boolean no_nak = false; /* no nak has been sent yet */
 
 static boolean between(seq_nr a, seq_nr b, seq_nr c) {
@@ -291,9 +291,14 @@ void selective_repeat() {
 
     for (i = 0; i < NR_BUFS; i++) {
         arrived[i] = false;
-        timer_ids[i][0] = -1;
+        for (int j = 0; j < NR_BUFS; j++) {
+            timer_ids[i][j] = -1;
+        }
     }
-    ack_timer_id[ThisStation] = -1; //TODO
+
+    for (int j = 0; j < NR_BUFS; j++) {
+        ack_timer_id[j] = -1;
+    }
 
 
     events_we_handle = frame_arrival | timeout | network_layer_ready;
@@ -341,12 +346,11 @@ void selective_repeat() {
                 //printf("Case 2\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
                 if (r.kind == DATA) {
-                    //printf("RECEIVED FRAME FROM: %d TO: %d\n", r.source, r.dest);
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak) {
                         send_frame(NAK, 0, frame_expected, out_buf, &r);
                     } else {
-                        start_ack_timer(r.dest); //TODO
+                        start_ack_timer(ThisStation); //TODO
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
                         /* Frames may be accepted in any order. */
@@ -359,7 +363,7 @@ void selective_repeat() {
                             arrived[frame_expected % NR_BUFS] = false;
                             inc(frame_expected);        /* advance lower edge of receiver's window */
                             inc(too_far);        /* advance upper edge of receiver's window */
-                            start_ack_timer(r.dest);        /* to see if (a separate ack is needed */ //TODO
+                            start_ack_timer(ThisStation);        /* to see if (a separate ack is needed */ //TODO
                         }
                     }
                 }
@@ -383,10 +387,11 @@ void selective_repeat() {
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
                 logLine(info, "Message from timer: '%s'\n", (char *) event.msg);
 
-                if (timer_id == ack_timer_id[r.source]) { // Ack timer timer out TODO
+                //printf("Ack timer id for source: %d, ack timer id for destination %d\n", ack_timer_id[r.source], ack_timer_id[r.dest]);
+                if (timer_id == ack_timer_id[r.dest]) { // Ack timer timer out TODO
                     logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                     free(event.msg);
-                    ack_timer_id[r.source] = -1; // It is no longer running TODO
+                    ack_timer_id[r.dest] = -1; // It is no longer running TODO
                     send_frame(ACK, 0, frame_expected, out_buf, &r);        /* ack timer expired; send ack */
                 } else {
                     int timed_out_seq_nr = atoi((char *) event.msg);
@@ -531,13 +536,13 @@ void stop_timer(seq_nr k, int station) {
 
 //TODO implement station
 void start_ack_timer(int station) {
-    //printf("START ACK! Station: %d, ThisStation %d\n", station, ThisStation);
     if (ack_timer_id[station] == -1) {
         logLine(trace, "Starting ack-timer\n");
         char *msg;
         msg = (char *) malloc(100 * sizeof(char));
         strcpy(msg, "Ack-timer");
         ack_timer_id[station] = SetTimer(act_timer_timeout_millis, (void *) msg);
+        //printf("Starting ack timer: %d, for ThisStation: %d, and station: %d\n", ack_timer_id[station], ThisStation, station);
         logLine(debug, "Ack-timer startet med id %d\n", ack_timer_id[station]);
     }
 }
