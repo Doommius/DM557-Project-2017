@@ -25,7 +25,7 @@
 char *StationName;         /* Globalvariabel til at overføre programnavn      */
 int ThisStation;           /* Globalvariabel der identificerer denne station. */
 log_type LogStyle;         /* Hvilken slags log skal systemet føre            */
-boolean network_layer_enabled;
+boolean network_layer_enabled[NR_BUFS];
 
 LogBuf mylog;                /* logbufferen                                     */
 
@@ -142,10 +142,10 @@ void FakeNetworkLayer1() {
         switch (event.type) {
             case network_layer_allowed_to_send:
                 Lock(network_layer_lock);
-                if (i < 20 && network_layer_enabled) {
+                if (i < 20 && network_layer_enabled[ThisStation]) {
                     // Signal element is ready
                     logLine(info, "Sending signal for message #%d\n", i);
-                    network_layer_enabled = false;
+                    network_layer_enabled[ThisStation] = false;
                     Signal(network_layer_ready, NULL);
                     i++;
                 }
@@ -197,9 +197,9 @@ void FakeNetworkLayer2() {
         switch (event.type) {
             case network_layer_allowed_to_send:
                 Lock(network_layer_lock);
-                if (network_layer_enabled && !EmptyFQ(from_network_layer_queue)) {
+                if (network_layer_enabled[ThisStation] && !EmptyFQ(from_network_layer_queue)) {
                     logLine(info, "Signal from network layer for message\n");
-                    network_layer_enabled = false;
+                    network_layer_enabled[ThisStation] = false;
                     ClearEvent(network_layer_ready); // Don't want to signal too many events
                     Signal(network_layer_ready, NULL);
                 }
@@ -280,7 +280,7 @@ void selective_repeat() {
     Init_lock(network_layer_lock);
 
 
-    enable_network_layer();             /* initialize */
+    enable_network_layer(ThisStation);             /* initialize */
     ack_expected = 0;                   /* next ack expected on the inbound stream */
     next_frame_to_send = 0;             /* number of next outgoing frame */
     frame_expected = 0;                 /* frame number expected */
@@ -404,26 +404,26 @@ void selective_repeat() {
         }
 
         if (nbuffered < NR_BUFS) {
-            enable_network_layer();
+            enable_network_layer(ThisStation);
         } else {
-            disable_network_layer();
+            disable_network_layer(ThisStation);
         }
     }
 }
 
 //TODO What to do
-void enable_network_layer(void) {
+void enable_network_layer(int station) {
     Lock(network_layer_lock);
     logLine(trace, "enabling network layer\n");
-    network_layer_enabled = true;
+    network_layer_enabled[station] = true;
     Signal(network_layer_allowed_to_send, NULL);
     Unlock(network_layer_lock);
 }
 
-void disable_network_layer(void) {
+void disable_network_layer(int station) {
     Lock(network_layer_lock);
     logLine(trace, "disabling network layer\n");
-    network_layer_enabled = false;
+    network_layer_enabled[station] = false;
     Unlock(network_layer_lock);
 }
 

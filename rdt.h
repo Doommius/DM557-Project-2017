@@ -77,10 +77,10 @@ void start_ack_timer(int station);
 void stop_ack_timer(int station);
 
 /* Allow the network layer to cause a network_layer_ready event. */
-void enable_network_layer(void);
+void enable_network_layer(int station);
 
 /* Forbid the network layer from causing a network_layer_ready event. */
-void disable_network_layer(void);
+void disable_network_layer(int station);
 
 /* In case of a timeout event, it is possible to find out the sequence
  * number of the frame that timed out (this is the sequence number parameter
