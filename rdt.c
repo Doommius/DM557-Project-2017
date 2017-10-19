@@ -94,6 +94,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     }
 
     to_physical_layer(r);
+    printf("Sending from: %d, to %d\n", r->source, r->dest);
 
     if (fk == DATA) {
         start_timer(frame_nr, r->dest);
@@ -512,7 +513,7 @@ void stop_timer(seq_nr k, int station) {
         logLine(trace, "timer %d stoppet. msg: %s \n", timer_id, msg);
         free(msg);
     } else {
-        logLine(trace, "timer %d kunne ikke stoppes. Måske er den timet ud?timer_ids=[%d, %d, %d, %d] \n", timer_id, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station]);
+        logLine(trace, "timer %d kunne ikke stoppes. Maaske er den timet ud?timer_ids=[%d, %d, %d, %d] \n", timer_id, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station]);
     }
 }
 
