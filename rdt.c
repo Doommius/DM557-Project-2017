@@ -94,7 +94,6 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
         no_nak = false;        /* one nak per frame, please */
     }
 
-    //printf("SENDING FROM: %d TO: %d\n", r->source, r->dest);
     //TODO Make dynamic
     if (r->dest != 0){
         to_physical_layer(r);
@@ -327,7 +326,6 @@ void selective_repeat() {
 
         switch (event.type) {
             case network_layer_ready:        /* accept, save, and transmit a new frame */
-                //printf("Case 1\n");
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS]); /* fetch new packet */
@@ -343,7 +341,6 @@ void selective_repeat() {
                 break;
 
             case frame_arrival:        /* a data or control frame has arrived */
-                //printf("Case 2\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
                 if (r.kind == DATA) {
                     /* An undamaged frame has arrived. */
@@ -381,13 +378,11 @@ void selective_repeat() {
                 break;
 
             case timeout: /* Ack timeout or regular timeout*/
-                //printf("Case 3\n");
                 // Check if it is the ack_timer
                 timer_id = event.timer_id;
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
                 logLine(info, "Message from timer: '%s'\n", (char *) event.msg);
 
-                //printf("Ack timer id for source: %d, ack timer id for destination %d\n", ack_timer_id[r.source], ack_timer_id[r.dest]);
                 if (timer_id == ack_timer_id[r.dest]) { // Ack timer timer out TODO
                     logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                     free(event.msg);
@@ -506,12 +501,10 @@ void to_physical_layer(frame *r) {
 
 
 void start_timer(seq_nr k, int station) {
-    //printf("START TIMER! Station: %d, ThisStation %d\n", station, ThisStation);
     char *msg;
     msg = (char *) malloc(100 * sizeof(char));
     sprintf(msg, "%d", k); // Save seq_nr in message
 
-    //printf("Starting timer for %d\n", station);
     timer_ids[k % NR_BUFS][station] = SetTimer(frame_timer_timeout_millis, (void *) msg);
 
     logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station], msg);
@@ -522,7 +515,6 @@ void start_timer(seq_nr k, int station) {
 void stop_timer(seq_nr k, int station) {
     int timer_id;
     char *msg;
-    //printf("STOP TIMER! Station: %d, ThisStation %d\n", station, ThisStation);
     timer_id = timer_ids[k][station];
     logLine(trace, "stop_timer for seq_nr %d med id=%d\n", k, timer_id);
 
@@ -542,7 +534,6 @@ void start_ack_timer(int station) {
         msg = (char *) malloc(100 * sizeof(char));
         strcpy(msg, "Ack-timer");
         ack_timer_id[station] = SetTimer(act_timer_timeout_millis, (void *) msg);
-        //printf("Starting ack timer: %d, for ThisStation: %d, and station: %d\n", ack_timer_id[station], ThisStation, station);
         logLine(debug, "Ack-timer startet med id %d\n", ack_timer_id[station]);
     }
 }
@@ -550,7 +541,6 @@ void start_ack_timer(int station) {
 //TODO implement station
 void stop_ack_timer(int station) {
     char *msg;
-    //printf("STOP ACK! Station: %d, ThisStation %d\n", station, ThisStation);
 
     logLine(trace, "stop_ack_timer\n");
     if (StopTimer(ack_timer_id[station], (void *) &msg)) {
@@ -564,14 +554,6 @@ void stop_ack_timer(int station) {
 int main(int argc, char *argv[]) {
     StationName = argv[0];
     ThisStation = atoi(argv[1]);
-//    printf(ThisStation);
-    //TODO change neighbors
-    for(int i = 0; i < ack_timer_size; i++){
-       // ack_timer_id[i] = 0;
-    }
-    for (int j = 0; j < NR_BUFS; j++) {
-        //timer_ids[j][0] = 0;
-    }
 
     if (argc == 3)
         printf("Station %d: arg2 = %s\n", ThisStation, argv[2]);
@@ -593,5 +575,3 @@ int main(int argc, char *argv[]) {
     Start();
     exit(0);
 }
-
-
