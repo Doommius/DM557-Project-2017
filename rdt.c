@@ -82,7 +82,6 @@ void packet_to_string(packet *data, char *buffer) {
 
 static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, packet buffer[], frame* r) {
     /* Construct and send a data, ack, or nak frame. */
-    //frame s;        /* scratch variable */
 
     r->kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
