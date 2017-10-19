@@ -36,30 +36,7 @@ mlock_t *network_layer_lock;
 mlock_t *write_lock;
 
 
-//TODO maybe do a function that handles this?
-// http://www.cplusplus.com/reference/queue/queue/pop/
-// http://www.cprograms.in/Stack/push-pop-stack.html
-// as its C
-packet ugly_buffer; // TODO Make this a queue
-FifoQueueEntry *nicebuffer;
-
-
-
-
-//std::queue<int> nice_buffer;
-//
-//pack getpacketformbuffer(){
-//	return nice_buffer.pop();
-//}
-//void putpackettobuffer(packet p){
-//	nice_buffer.push(p);
-//}
-
-
-
-
 int ack_timer_id[16];
-int ack_timer_size = 16;
 int timer_ids[NR_BUFS][NR_BUFS];
 boolean no_nak = false; /* no nak has been sent yet */
 
@@ -94,7 +71,6 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     }
 
     to_physical_layer(r);
-    printf("Sending from: %d, to %d\n", r->source, r->dest);
 
     if (fk == DATA) {
         start_timer(frame_nr, r->dest);
