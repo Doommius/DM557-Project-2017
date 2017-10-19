@@ -41,8 +41,8 @@ typedef struct {        /* frames are transported in this layer */
     int sendTime;
     int recvTime;
 
-    int source;
-    int dest;
+    int source;         /* Source station */
+    int dest;           /* Destination station */
 } frame;
 
 /* init_frame fills in default initial values in a frame. Protocols should
