@@ -289,13 +289,10 @@ void selective_repeat() {
 
     for (i = 0; i < NR_BUFS; i++) {
         arrived[i] = false;
+        ack_timer_id[i] = -1
         for (int j = 0; j < NR_BUFS; j++) {
             timer_ids[i][j] = -1;
         }
-    }
-
-    for (int j = 0; j < NR_BUFS; j++) {
-        ack_timer_id[j] = -1;
     }
 
 
