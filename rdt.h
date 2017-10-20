@@ -18,19 +18,31 @@
 
 #define MAX_PKT 8        /* determines packet size in bytes */
 
-typedef enum {false, true} boolean;        /* boolean type */
+typedef enum {
+    false, true
+} boolean;        /* boolean type */
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
-typedef struct {char data[MAX_PKT];} packet;        /* packet definition */
-typedef enum {DATA, ACK, NAK} frame_kind;        /* frame_kind definition */
+typedef struct {
+    char data[MAX_PKT];
+
+    int source;
+    int dest;
+} packet;        /* packet definition */
+typedef enum {
+    DATA, ACK, NAK
+} frame_kind;        /* frame_kind definition */
 
 
 typedef struct {        /* frames are transported in this layer */
-  frame_kind kind;        /* what kind of a frame is it? */
-  seq_nr seq;           /* sequence number */
-  seq_nr ack;           /* acknowledgement number */
-  packet info;          /* the network layer packet */
-  int sendTime;
-  int recvTime;
+    frame_kind kind;        /* what kind of a frame is it? */
+    seq_nr seq;           /* sequence number */
+    seq_nr ack;           /* acknowledgement number */
+    packet info;          /* the network layer packet */
+    int sendTime;
+    int recvTime;
+
+    int source;         /* Source station */
+    int dest;           /* Destination station */
 } frame;
 
 /* init_frame fills in default initial values in a frame. Protocols should
@@ -50,13 +62,13 @@ void to_network_layer(packet *p);
 int from_physical_layer(frame *r);
 
 /* Pass the frame to the physical layer for transmission. */
-void to_physical_layer(frame *s);
+void to_physical_layer(frame *r);
 
 /* Start the clock running and enable the timeout event. */
-void start_timer(seq_nr k);
+void start_timer(seq_nr k, int station);
 
 /* Stop the clock and disable the timeout event. */
-void stop_timer(seq_nr k);
+void stop_timer(seq_nr k, int station);
 
 /* Start an auxiliary timer and enable the ack_timeout event. */
 void start_ack_timer(int station);
@@ -65,10 +77,10 @@ void start_ack_timer(int station);
 void stop_ack_timer(int station);
 
 /* Allow the network layer to cause a network_layer_ready event. */
-void enable_network_layer(void);
+void enable_network_layer(int station);
 
 /* Forbid the network layer from causing a network_layer_ready event. */
-void disable_network_layer(void);
+void disable_network_layer(int station);
 
 /* In case of a timeout event, it is possible to find out the sequence
  * number of the frame that timed out (this is the sequence number parameter
@@ -79,6 +91,7 @@ void disable_network_layer(void);
  * get_timedout_seqnr() returns the sequence number of the frame that timed out.
  */
 void init_max_seqnr(unsigned int o);
+
 unsigned int get_timedout_seqnr(void);
 
 /* Macro inc is expanded in-line: Increment k circularly. */

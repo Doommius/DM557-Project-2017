@@ -52,7 +52,7 @@ endif
 .PHONY:	all tests install uninstall full-uninstall clean
 
 all:	$(LIBSUBNET) \
-	$(NETWORK)
+	$(NETWORK) tests mynetwork
 
 tests:	$(INSTALLDIR)/lib/$(LIBSUBNET) \
 	nettest \
