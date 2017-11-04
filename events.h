@@ -10,6 +10,7 @@
 #define NETWORK_LAYER_ALLOWED_TO_SEND 4
 #define NETWORK_LAYER_READY 8
 #define DATA_FOR_NETWORK_LAYER 16
+#define TRANSPORT_LAYER_READY 32
 
 
 void check_event(long int event, char* event_name);

@@ -12,6 +12,7 @@
 #define network_layer_allowed_to_send  0x00000004
 #define network_layer_ready            0x00000008
 #define data_for_network_layer         0x00000010
+#define transport_layer_ready          0x00000020
 
 #define frame_timer_timeout_millis  250
 #define act_timer_timeout_millis     50

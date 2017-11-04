@@ -14,6 +14,42 @@
 #include "events.h"
 #include "network_layer.h"
 
+
+
+void initialize_locks_and_queues(){
+
+}
+
+int forward(int toAddress){
+
+}
+
+void network_layer_main_loop(){
+    long int events_we_handle = network_layer_allowed_to_send | data_for_network_layer | transport_layer_ready;
+    event_t event;
+
+    while (true) {
+        Wait(&event, events_we_handle);
+        switch (event.type) {
+            case network_layer_allowed_to_send:
+                break;
+            case data_for_network_layer:
+                break;
+            case transport_layer_ready:
+                break;
+
+        }
+    }
+}
+
+void signal_link_layer_if_allowed(int address){
+
+}
+
+
+
+
+
 void packet_to_string(packet *data, char *buffer) {
     strncpy(buffer, (char *) data->data, MAX_PKT);
     buffer[MAX_PKT] = '\0';

@@ -73,6 +73,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
 
+
 /* Fake network/upper layers for station 1
  *
  * Send 20 packets and receive 10 before we stop
