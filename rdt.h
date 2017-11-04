@@ -12,23 +12,37 @@
 #define network_layer_allowed_to_send  0x00000004
 #define network_layer_ready            0x00000008
 #define data_for_network_layer         0x00000010
-#define transport_layer_ready          0x00000020
+#define data_from_network_layer        0x00000020
+#define transport_layer_ready          0x00000040
+
 
 #define frame_timer_timeout_millis  250
 #define act_timer_timeout_millis     50
 
 #define MAX_PKT 8        /* determines packet size in bytes */
+#define MAX_SEG 8
 
 typedef enum {
     false, true
 } boolean;        /* boolean type */
+
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
+
 typedef struct {
     char data[MAX_PKT];
 
     int source;
     int dest;
 } packet;        /* packet definition */
+
+
+typedef struct{
+    char data;
+    int source;
+    int dest;
+} segment;      /* Segment definition */
+
+
 typedef enum {
     DATA, ACK, NAK
 } frame_kind;        /* frame_kind definition */

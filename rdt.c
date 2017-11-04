@@ -73,6 +73,36 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
 
+void FakeTransportLayer(){
+
+    char *buffer;
+    int i, j;
+    event_t event;
+    FifoQueueEntry e;
+    segment s;
+
+    from_network_layer_queue = InitializeFQ();
+    for_network_layer_queue = InitializeFQ();
+
+    // Setup some messages
+    for (i = 0; i < 20; i++) {
+        buffer = (char *) malloc(sizeof(char) * MAX_PKT);
+        sprintf(buffer, "D: %d", i);
+        s.data = buffer;
+        s.source = ThisStation;
+        s.dest = 2;
+    }
+
+
+    Signal(data_for_network_layer, NULL);
+
+    while(true){
+
+
+    }
+}
+
+
 
 /* Fake network/upper layers for station 1
  *
