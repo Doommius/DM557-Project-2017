@@ -17,6 +17,9 @@ static char rcsid[] = "$Id: nettest.c,v 1.10 1999/09/06 16:16:50 dim Exp $";
 #include <subnet.h>
 #include <subnetsupport.h>
 #include <fifoqueue.h>
+#include "subnet.h"
+#include "fifoqueue.h"
+#include "subnetsupport.h"
 
 /* En macro for at lette overførslen af korrekt navn til Activate */
 #define ACTIVATE(n, f) Activate(n, f, #f)

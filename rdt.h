@@ -52,12 +52,6 @@ typedef struct {        /* frames are transported in this layer */
  */
 void init_frame(frame *s, int count);
 
-/* Fetch a packet from the network layer for transmission on the channel. */
-void from_network_layer(packet *p);
-
-/* Deliver information from an inbound frame to the network layer. */
-void to_network_layer(packet *p);
-
 /* Go get an inbound frame from the physical layer and copy it to r. */
 int from_physical_layer(frame *r);
 
@@ -75,13 +69,6 @@ void start_ack_timer(int station);
 
 /* Stop the auxiliary timer and disable the ack_timeout event. */
 void stop_ack_timer(int station);
-
-/* Allow the network layer to cause a network_layer_ready event. */
-void enable_network_layer(int station);
-
-/* Forbid the network layer from causing a network_layer_ready event. */
-void disable_network_layer(int station);
-
 /* In case of a timeout event, it is possible to find out the sequence
  * number of the frame that timed out (this is the sequence number parameter
  * in the start_timer function). For this, the simulator must know the maximum

@@ -13,6 +13,8 @@
 #include "subnet.h"
 #include "fifoqueue.h"
 #include "debug.h"
+#include "events.h"
+#include "network_layer.h"
 
 /* En macro for at lette overførslen af korrekt navn til Activate */
 #define ACTIVATE(n, f) Activate(n, f, #f)
@@ -48,13 +50,6 @@ static boolean between(seq_nr a, seq_nr b, seq_nr c) {
     logLine(debug, "a==%d, b=%d, c=%d, x=%d, y=%d, z=%d\n", a, b, c, x, y, z);
 
     return x || y || z;
-}
-
-/* Copies package content to buffer, ensuring it has a string end character. */
-void packet_to_string(packet *data, char *buffer) {
-    strncpy(buffer, (char *) data->data, MAX_PKT);
-    buffer[MAX_PKT] = '\0';
-
 }
 
 static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, packet buffer[], frame* r) {
@@ -204,26 +199,7 @@ void FakeNetworkLayer2() {
 
 void log_event_received(long int event) {
     char *event_name;
-    switch (event) {
-        case 1:
-            event_name = "frame_arrival";
-            break;
-        case 2:
-            event_name = "timeout";
-            break;
-        case 4:
-            event_name = "network_layer_allowed_to_send";
-            break;
-        case 8:
-            event_name = "network_layer_ready";
-            break;
-        case 16:
-            event_name = "data_for_network_layer";
-            break;
-        default:
-            event_name = "unknown";
-            break;
-    }
+    check_event(event, event_name);
     logLine(trace, "Event received %s\n", event_name);
 
 }
@@ -250,7 +226,7 @@ void selective_repeat() {
     Init_lock(network_layer_lock);
 
 
-    enable_network_layer(ThisStation);             /* initialize */
+    enable_network_layer(ThisStation, network_layer_enabled, network_layer_lock);             /* initialize */
     ack_expected = 0;                   /* next ack expected on the inbound stream */
     next_frame_to_send = 0;             /* number of next outgoing frame */
     frame_expected = 0;                 /* frame number expected */
@@ -296,7 +272,7 @@ void selective_repeat() {
             case network_layer_ready:        /* accept, save, and transmit a new frame */
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
-                from_network_layer(&out_buf[next_frame_to_send % NR_BUFS]); /* fetch new packet */
+                from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
 
                 r.source = ThisStation;
                 if (ThisStation == 2){
@@ -323,7 +299,7 @@ void selective_repeat() {
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
                         while (arrived[frame_expected % NR_BUFS]) {
                             /* Pass frames and advance window. */
-                            to_network_layer(&in_buf[frame_expected % NR_BUFS]);
+                            to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
                             no_nak = true;
                             arrived[frame_expected % NR_BUFS] = false;
                             inc(frame_expected);        /* advance lower edge of receiver's window */
@@ -367,59 +343,12 @@ void selective_repeat() {
         }
 
         if (nbuffered < NR_BUFS) {
-            enable_network_layer(ThisStation);
+            enable_network_layer(ThisStation, network_layer_enabled, network_layer_lock);
         } else {
-            disable_network_layer(ThisStation);
+            disable_network_layer(ThisStation, network_layer_enabled, network_layer_lock);
         }
     }
 }
-
-void enable_network_layer(int station) {
-    Lock(network_layer_lock);
-    logLine(trace, "enabling network layer\n");
-    network_layer_enabled[station] = true;
-    Signal(network_layer_allowed_to_send, NULL);
-    Unlock(network_layer_lock);
-}
-
-void disable_network_layer(int station) {
-    Lock(network_layer_lock);
-    logLine(trace, "disabling network layer\n");
-    network_layer_enabled[station] = false;
-    Unlock(network_layer_lock);
-}
-
-void from_network_layer(packet *p) {
-    FifoQueueEntry e;
-
-    Lock(network_layer_lock);
-    e = DequeueFQ(from_network_layer_queue);
-    Unlock(network_layer_lock);
-
-    if (!e) {
-        logLine(error, "ERROR: We did not receive anything from the queue, like we should have\n");
-    } else {
-        memcpy(p, (char *) ValueOfFQE(e), sizeof(packet));
-        free((void *) ValueOfFQE(e));
-        DeleteFQE(e);
-    }
-}
-
-
-void to_network_layer(packet *p) {
-    char *buffer;
-    Lock(network_layer_lock);
-
-    buffer = (char *) malloc(sizeof(char) * (1 + MAX_PKT));
-    packet_to_string(p, buffer);
-
-    EnqueueFQ(NewFQE((void *) buffer), for_network_layer_queue);
-
-    Unlock(network_layer_lock);
-
-    Signal(data_for_network_layer, NULL);
-}
-
 
 void print_frame(frame *s, char *direction) {
     char temp[MAX_PKT + 1];
