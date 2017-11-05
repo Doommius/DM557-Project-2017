@@ -25,8 +25,9 @@ int forward(int toAddress){
 }
 
 void network_layer_main_loop(){
-    long int events_we_handle = network_layer_allowed_to_send | data_for_network_layer | transport_layer_ready;
+    long int events_we_handle = network_layer_allowed_to_send | data_for_network_layer | data_from_transport_layer;
     event_t event;
+
 
     while (true) {
         Wait(&event, events_we_handle);
@@ -35,7 +36,7 @@ void network_layer_main_loop(){
                 break;
             case data_for_network_layer:
                 break;
-            case transport_layer_ready:
+            case data_from_transport_layer:
                 break;
 
         }
