@@ -50,5 +50,8 @@ void enable_network_layer(int station, boolean network_layer_allowance_list[], m
 void disable_network_layer(int station, boolean network_layer_allowance_list[], mlock_t *network_layer_lock);
 
 void packet_to_string(packet *data, char *buffer);
+FifoQueue *get_from_network_layer_queue();
+
+FifoQueue *get_for_network_layer_queue();
 
 #endif //NETWORK_LAYER_H

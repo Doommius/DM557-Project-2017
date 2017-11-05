@@ -27,6 +27,12 @@ void check_event(long int event, char* event_name){
         case DATA_FROM_TRANSPORT_LAYER:
             event_name = "data_from_transport_layer";
             break;
+        case DATA_FOR_LINK_LAYER:
+            event_name = "data_for_link_layer";
+            break;
+        case DATA_FROM_LINK_LAYER:
+            event_name = "data_from_link_layer";
+            break;
         default:
             event_name = "unknown";
             break;

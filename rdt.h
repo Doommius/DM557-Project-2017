@@ -14,6 +14,8 @@
 #define data_for_network_layer         0x00000010
 #define data_for_transport_layer       0x00000020
 #define data_from_transport_layer      0x00000040
+#define data_for_link_layer            0x00000080
+#define data_from_link_layer           0x00000100
 
 
 #define frame_timer_timeout_millis  250

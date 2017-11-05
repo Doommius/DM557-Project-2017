@@ -75,7 +75,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
 
 
 void FakeTransportLayer(){
-
+    initialize_locks_and_queues();
     char *buffer;
     int i, j;
     event_t event;
@@ -83,20 +83,26 @@ void FakeTransportLayer(){
     FifoQueueEntry e;
     packet p;
 
-    from_network_layer_queue = InitializeFQ();
-    for_network_layer_queue = InitializeFQ();
+
+    FifoQueue from_queue;                /* Queue for data from network layer */
+    FifoQueue for_queue;    /* Queue for data for the network layer */
+
+
+    from_queue = (FifoQueue) get_from_network_layer_queue();
+    for_queue = (FifoQueue) get_for_network_layer_queue();
 
     // Setup some messages
     for (i = 0; i < 20; i++) {
         buffer = (char *) malloc(sizeof(char) * MAX_PKT);
         sprintf(buffer, "D: %d", i);
-        EnqueueFQ(NewFQE((void *) buffer), for_network_layer_queue);
+        EnqueueFQ(NewFQE((void *) buffer), for_queue);
     }
 
     events_we_handle = data_for_transport_layer;
 
     sleep(2);
 
+    printf("Last = %s\n", (char *)for_queue->last->val);
     i = 0;
     j = 0;
 
@@ -113,7 +119,36 @@ void FakeTransportLayer(){
 }
 
 void FakeNetworkLayer(){
+    initialize_locks_and_queues();
+    char *buffer;
+    int i, j;
 
+    //long int events_we_handle;
+
+    event_t event;
+    FifoQueueEntry e;
+
+
+
+    //events_we_handle = data_from_transport_layer | data_for_link_layer | data_from_link_layer;
+
+    sleep(2);
+
+    network_layer_main_loop();
+    /*
+    while(true){
+        Wait(&event, events_we_handle);
+        switch (event.type){
+            case data_from_transport_layer:
+                e = DequeueFQ(for_network_layer_queue);
+                logLine(succes, "Received message: %s\n", ((char *) e->val));
+                break;
+            case data_for_link_layer:
+                break;
+
+        }
+    }
+     */
 }
 
 
@@ -490,6 +525,7 @@ void stop_ack_timer(int station) {
 
 
 int main(int argc, char *argv[]) {
+
     StationName = argv[0];
     ThisStation = atoi(argv[1]);
 
@@ -504,13 +540,15 @@ int main(int argc, char *argv[]) {
 
 
     /* processerne aktiveres */
+    /*
     ACTIVATE(1, FakeNetworkLayer1);
     ACTIVATE(2, FakeNetworkLayer2);
     ACTIVATE(1, selective_repeat);
     ACTIVATE(2, selective_repeat);
+    */
 
-
-    ACTIVATE(3, FakeTransportLayer);
+    ACTIVATE(1, FakeTransportLayer);
+    ACTIVATE(1, FakeNetworkLayer);
     /* simuleringen starter */
     Start();
     exit(0);

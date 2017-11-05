@@ -15,9 +15,13 @@
 #include "network_layer.h"
 
 
+FifoQueue from_network_layer_queue;                /* Queue for data from network layer */
+FifoQueue for_network_layer_queue;    /* Queue for data for the network layer */
 
 void initialize_locks_and_queues(){
 
+    from_network_layer_queue = InitializeFQ();
+    for_network_layer_queue = InitializeFQ();
 }
 
 int forward(int toAddress){
@@ -25,8 +29,12 @@ int forward(int toAddress){
 }
 
 void network_layer_main_loop(){
-    long int events_we_handle = network_layer_allowed_to_send | data_for_network_layer | data_from_transport_layer;
+    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_link_layer | data_from_link_layer;
     event_t event;
+    FifoQueueEntry e;
+
+    FifoQueue for_queue;
+
 
 
     while (true) {
@@ -34,9 +42,17 @@ void network_layer_main_loop(){
         switch (event.type) {
             case network_layer_allowed_to_send:
                 break;
-            case data_for_network_layer:
+
+            case data_from_link_layer:
+
                 break;
             case data_from_transport_layer:
+                printf("Fik signal\n");
+                for_queue = (FifoQueue) get_for_network_layer_queue();
+                printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
+                e = DequeueFQ(for_queue);
+                printf("Got Message %s\n", (char *)e->val);
+
                 break;
 
         }
@@ -101,4 +117,12 @@ void disable_network_layer(int station, boolean network_layer_allowance_list[], 
     logLine(trace, "disabling network layer\n");
     network_layer_allowance_list[station] = false;
     Unlock(network_layer_lock);
+}
+
+FifoQueue *get_from_network_layer_queue(){
+    return (FifoQueue *) from_network_layer_queue;
+}
+
+FifoQueue *get_for_network_layer_queue(){
+    return (FifoQueue *) for_network_layer_queue;
 }
