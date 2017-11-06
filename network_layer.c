@@ -17,7 +17,14 @@
 
 FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
 FifoQueue queue_NtoT;   //Queue from Network Layer to Transport Layer
+FifoQueue queue_LtoN;   //Queue from Link Layer to Network Layer
+FifoQueue queue_NtoL;   //Queue from Network Layer to Link Layer
 
+mlock_t *network_layer_lock;
+mlock_t *write_lock;
+
+
+boolean network_layer_enabled[NR_BUFS];
 
 
 /* Make sure all locks and queues are initialized properly */
@@ -25,6 +32,15 @@ void initialize_locks_and_queues(){
 
     queue_TtoN = InitializeFQ();
     queue_NtoT= InitializeFQ();
+    queue_LtoN = InitializeFQ();
+    queue_NtoL = InitializeFQ();
+
+
+    write_lock = malloc(sizeof(mlock_t));
+    network_layer_lock = (mlock_t *) malloc(sizeof(mlock_t));
+
+    Init_lock(write_lock);
+    Init_lock(network_layer_lock);
 }
 
 void init_forwardtable(forwarding_table *table) {
@@ -65,26 +81,41 @@ int forward(int toAddress){
 
 /* Listen to relevant events for network layer, and act upon them */
 void network_layer_main_loop(){
-    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_link_layer | data_from_link_layer;
+    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_link_layer | data_for_network_layer;
     event_t event;
     FifoQueueEntry e;
     datagram d;
+    int i;
 
     int ThisStation;
     ThisStation = get_ThisStation();
+
     FifoQueue for_queue;
     FifoQueue from_queue;
-    printf("%d\n", ThisStation);
 
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
             case network_layer_allowed_to_send:
-
+                Lock(network_layer_lock);
+                if (i < 20 && network_layer_enabled[ThisStation]) {
+                    // Signal element is ready
+                    logLine(info, "Sending signal for message #%d\n", i);
+                    network_layer_enabled[ThisStation] = false;
+                    Signal(network_layer_ready, NULL);
+                    i++;
+                }
+                Unlock(network_layer_lock);
 
                 break;
 
-            case data_from_link_layer:
+            case data_for_network_layer:
+                Lock(network_layer_lock);
+
+                e = DequeueFQ(queue_TtoN);
+                logLine(succes, "Received message: %s\n", ((char *) e->val));
+
+                Unlock(network_layer_lock);
 
                 break;
             case data_from_transport_layer:

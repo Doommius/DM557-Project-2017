@@ -8,6 +8,8 @@
 #include "events.h"
 #include "rdt.h"
 
+#define NR_BUFS 4
+
 /* For now only DATAGRAM is used, but for dynamic routing, ROUTERINFO is defined */
 typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */
 
@@ -44,8 +46,6 @@ void network_layer_main_loop();
  * relevant queue is not empty, and that the link layer has allowed us to send
  * to the neighbour  */
 void signal_link_layer_if_allowed( int address);
-
-
 
 /* Fetch a packet from the network layer for transmission on the channel. */
 void from_network_layer(packet *p,  FifoQueue from_network_layer_queue, mlock_t *network_layer_lock);

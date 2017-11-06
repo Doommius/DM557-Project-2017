@@ -146,8 +146,6 @@ void FakeTransportLayer1(){
             case data_for_transport_layer:
 
                 printf("Fik signal fra Network Layer\n");
-                e = DequeueFQ(from_queue);
-                printf("%s\n", e->val);
 
                 break;
         }
@@ -623,17 +621,17 @@ int main(int argc, char *argv[]) {
 
 
     /* processerne aktiveres */
-    /*
+
     ACTIVATE(1, FakeNetworkLayer1);
     ACTIVATE(2, FakeNetworkLayer2);
     ACTIVATE(1, selective_repeat);
     ACTIVATE(2, selective_repeat);
-*/
 
 
+/*
     ACTIVATE(1, FakeTransportLayer1);
     ACTIVATE(1, FakeNetworkLayer);
-
+*/
     /* simuleringen starter */
     Start();
     exit(0);
