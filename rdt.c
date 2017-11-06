@@ -43,12 +43,31 @@ int timer_ids[NR_BUFS][NR_BUFS];
 boolean no_nak = false; /* no nak has been sent yet */
 
 static boolean between(seq_nr a, seq_nr b, seq_nr c) {
+    // x = a leq b and b les c
+    // if b is the middle number
     boolean x = ((a <= b) && (b < c));
+    // y = c less a and a leq b
+    // if a is the middle number?
     boolean y = ((c < a) && (a <= b));
+    // z = b less c and c less a
+    // if c is the middle number
     boolean z = ((b < c) && (c < a));
     // TODO Omskriv så det er til at fatte!
+
     logLine(debug, "a==%d, b=%d, c=%d, x=%d, y=%d, z=%d\n", a, b, c, x, y, z);
 
+    if(x){
+        logLine(debug, "Bwteen function: seq_nr b (%d) is between a(%d) and c(%d)\n",b,a,c);
+    }
+    if(y){
+        logLine(debug, "Bwteen function: seq_nr a (%d) is between b(%d) and c(%d)\n",a,b,c);
+    }
+    if(z){
+        logLine(debug, "Bwteen function: seq_nr c (%d) is between a(%d) and b(%d)\n",c,a,b);
+    }
+
+
+    // return true is any of them are between.
     return x || y || z;
 }
 
@@ -85,6 +104,8 @@ void FakeTransportLayer(){
 
 
     //TODO Bedre queue navne
+    //TODO Maybe rename to From_network_queue
+    //TODO and For_Network_queue or to_Network_queue?
     FifoQueue from_queue;                /* Queue for data from network layer */
     FifoQueue for_queue;    /* Queue for data for the network layer */
 
