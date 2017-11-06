@@ -42,6 +42,16 @@ int ack_timer_id[16];
 int timer_ids[NR_BUFS][NR_BUFS];
 boolean no_nak = false; /* no nak has been sent yet */
 
+
+/**
+ * This one does this
+ * ((a <= b) && (b < c)) || ((c < a) && (a <= b)) || ((b < c) && (c < a))
+ * eg. if any one number is between one the the others it returns True
+ * @param a
+ * @param b
+ * @param c
+ * @return
+ */
 static boolean between(seq_nr a, seq_nr b, seq_nr c) {
     // x = a leq b and b les c
     // if b is the middle number
@@ -52,18 +62,18 @@ static boolean between(seq_nr a, seq_nr b, seq_nr c) {
     // z = b less c and c less a
     // if c is the middle number
     boolean z = ((b < c) && (c < a));
-    // TODO Omskriv så det er til at fatte!
+    // TODO Omskriv så det er til at fatte! tried - Mark Jervelund
 
     logLine(debug, "a==%d, b=%d, c=%d, x=%d, y=%d, z=%d\n", a, b, c, x, y, z);
 
     if(x){
-        logLine(debug, "Bwteen function: seq_nr b (%d) is between a(%d) and c(%d)\n",b,a,c);
+        logLine(debug, "between function: seq_nr b (%d) is between a(%d) and c(%d)\n",b,a,c);
     }
     if(y){
-        logLine(debug, "Bwteen function: seq_nr a (%d) is between b(%d) and c(%d)\n",a,b,c);
+        logLine(debug, "between function: seq_nr a (%d) is between b(%d) and c(%d)\n",a,b,c);
     }
     if(z){
-        logLine(debug, "Bwteen function: seq_nr c (%d) is between a(%d) and b(%d)\n",c,a,b);
+        logLine(debug, "between function: seq_nr c (%d) is between a(%d) and b(%d)\n",c,a,b);
     }
 
 

@@ -130,7 +130,8 @@ void disable_network_layer(int station, boolean network_layer_allowance_list[], 
 
 
 //TODO Bedre funktions navne
-// But how? aren't they descriptive as they are?
+//TODO But how? aren't they descriptive as they are?
+
 FifoQueue *get_from_network_layer_queue(){
     return (FifoQueue *) from_network_layer_queue;
 }
