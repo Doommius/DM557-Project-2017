@@ -53,9 +53,12 @@ void network_layer_main_loop(){
                 from_queue = (FifoQueue) get_from_network_layer_queue();
                 while (!EmptyFQ(for_queue) ){
                     e = DequeueFQ(for_queue);
+
+                    //TODO Vi skal ikke queue det igen, det er bare for at teste at vi kan sende tilbage til transport laget
                     EnqueueFQ(e, from_queue);
                 }
                 //printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
+                //TODO Det her skal ikke være her, det er bare en test
                 printf("Signaler transport laget\n");
                 Signal(data_for_transport_layer, NULL);
 
@@ -125,6 +128,8 @@ void disable_network_layer(int station, boolean network_layer_allowance_list[], 
     Unlock(network_layer_lock);
 }
 
+
+//TODO Bedre funktions navne
 FifoQueue *get_from_network_layer_queue(){
     return (FifoQueue *) from_network_layer_queue;
 }

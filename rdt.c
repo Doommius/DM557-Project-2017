@@ -84,6 +84,7 @@ void FakeTransportLayer(){
     packet p;
 
 
+    //TODO Bedre queue navne
     FifoQueue from_queue;                /* Queue for data from network layer */
     FifoQueue for_queue;    /* Queue for data for the network layer */
 
