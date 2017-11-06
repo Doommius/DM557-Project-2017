@@ -25,7 +25,18 @@ void initialize_locks_and_queues(){
 }
 
 int forward(int toAddress){
+    int address;
 
+    forwarding_table table;
+
+    table.table = { {1, {2, 3}},
+                    {2, {1, 4}},
+                    {3, {1, 4}},
+                    {4, {2, 3}}};
+
+
+
+    return address;
 }
 
 void network_layer_main_loop(){
@@ -35,7 +46,6 @@ void network_layer_main_loop(){
 
     FifoQueue for_queue;
     FifoQueue from_queue;
-
 
 
     while (true) {
@@ -72,14 +82,9 @@ void signal_link_layer_if_allowed(int address){
 
 }
 
-
-
-
-
 void packet_to_string(packet *data, char *buffer) {
     strncpy(buffer, (char *) data->data, MAX_PKT);
     buffer[MAX_PKT] = '\0';
-
 }
 
 void from_network_layer(packet *p, FifoQueue from_network_layer_queue, mlock_t *network_layer_lock) {
@@ -97,7 +102,6 @@ void from_network_layer(packet *p, FifoQueue from_network_layer_queue, mlock_t *
         DeleteFQE(e);
     }
 }
-
 
 void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *network_layer_lock) {
     char *buffer;

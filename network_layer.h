@@ -18,6 +18,16 @@ typedef struct {                        /* datagrams are transported in this lay
     int to;                                                /* To station address */
 } datagram;
 
+typedef struct {
+    int station;    // Address of station
+    int connections[];
+    int length;
+} forwarding_field;
+
+typedef struct {
+    forwarding_field table[];
+} forwarding_table;
+
 
 
 /* Make sure all locks and queues are initialized properly */
