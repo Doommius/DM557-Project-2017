@@ -34,6 +34,7 @@ void network_layer_main_loop(){
     FifoQueueEntry e;
 
     FifoQueue for_queue;
+    FifoQueue from_queue;
 
 
 
@@ -47,11 +48,16 @@ void network_layer_main_loop(){
 
                 break;
             case data_from_transport_layer:
-                printf("Fik signal\n");
+                printf("Fik signal, dequeuer:\n");
                 for_queue = (FifoQueue) get_for_network_layer_queue();
-                printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
-                e = DequeueFQ(for_queue);
-                printf("Got Message %s\n", (char *)e->val);
+                from_queue = (FifoQueue) get_from_network_layer_queue();
+                while (!EmptyFQ(for_queue) ){
+                    e = DequeueFQ(for_queue);
+                    EnqueueFQ(e, from_queue);
+                }
+                //printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
+                printf("Signaler transport laget\n");
+                Signal(data_for_transport_layer, NULL);
 
                 break;
 

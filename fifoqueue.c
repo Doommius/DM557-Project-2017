@@ -65,14 +65,12 @@ void EnqueueFQ(FifoQueueEntry e, FifoQueue Q)
  */
 FifoQueueEntry DequeueFQ(FifoQueue Q)
 {
-  printf("Dequeueing\n");
   FifoQueueEntry e;
   if (EmptyFQ(Q))
     return NULL;
   else
     {
       /* Det første element fjernes fra listen */
-      printf("First element removed: %s\n", (char *) Q->first->val);
       e = Q->first;
       /* er der et eller flere elementer tilbage? */
       if ( e->next == NULL)
@@ -80,7 +78,6 @@ FifoQueueEntry DequeueFQ(FifoQueue Q)
 	  /* der er kun et element tilbage */
 	  Q->first = NULL;
 	  Q->last  = NULL;
-        printf("No elements left \n");
 
     }
       else
@@ -88,7 +85,6 @@ FifoQueueEntry DequeueFQ(FifoQueue Q)
 	  /* elementet bagved det aktuelle element opdateres */
 	  Q->first       = e->next;
 	  Q->first->prev = NULL;
-        printf("New first: %s\n", (char *) Q->first->val);
 
     }
       e->next  = NULL;

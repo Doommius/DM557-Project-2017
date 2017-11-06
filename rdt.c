@@ -88,6 +88,7 @@ void FakeTransportLayer(){
     FifoQueue for_queue;    /* Queue for data for the network layer */
 
 
+
     from_queue = (FifoQueue) get_from_network_layer_queue();
     for_queue = (FifoQueue) get_for_network_layer_queue();
 
@@ -111,7 +112,11 @@ void FakeTransportLayer(){
         Wait(&event, events_we_handle);
         switch (event.type){
             case data_for_transport_layer:
-
+                printf("Fik signal fra Network Layer\n");
+                while (!EmptyFQ(from_queue) ){
+                    e = DequeueFQ(from_queue);
+                    printf("%s\n",(char *) e->val);
+                }
                 break;
         }
 
@@ -132,7 +137,6 @@ void FakeNetworkLayer(){
 
     //events_we_handle = data_from_transport_layer | data_for_link_layer | data_from_link_layer;
 
-    sleep(2);
 
     network_layer_main_loop();
     /*
@@ -376,6 +380,7 @@ void selective_repeat() {
                         /* Frames may be accepted in any order. */
                         arrived[r.seq % NR_BUFS] = true;        /* mark buffer as full */
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
+                        printf("Packet info: %s\n", r.info.data);
                         while (arrived[frame_expected % NR_BUFS]) {
                             /* Pass frames and advance window. */
                             to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
@@ -545,10 +550,12 @@ int main(int argc, char *argv[]) {
     ACTIVATE(2, FakeNetworkLayer2);
     ACTIVATE(1, selective_repeat);
     ACTIVATE(2, selective_repeat);
-    */
+*/
+
 
     ACTIVATE(1, FakeTransportLayer);
     ACTIVATE(1, FakeNetworkLayer);
+
     /* simuleringen starter */
     Start();
     exit(0);
