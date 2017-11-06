@@ -27,21 +27,40 @@ void initialize_locks_and_queues(){
     queue_NtoT= InitializeFQ();
 }
 
-/* Where should a datagram be sent to. Transport layer knows only end hosts,
- * but we will need to inform the link layer where it should forward it to */
-int forward(int toAddress){
-    int address;
-
-    forwarding_table table;
-
-    table.table = { {1, {2, 3}},
+void init_forwardtable(forwarding_table *table) {
+    table->table = {{1, {2, 3}},
                     {2, {1, 4}},
                     {3, {1, 4}},
                     {4, {2, 3}}};
 
+    table->size = sizeof(table->table) / sizeof(forwarding_field);
+    printf("Size of forwarding table: %i\n", table->size);
+}
 
+int round_robin(int connections[]) {
+    int random_index = rand() % (sizeof(connections) / sizeof(connections[0]));
+    return connections[random_index];
+}
 
-    return address;
+/* Where should a datagram be sent to. Transport layer knows only end hosts,
+ * but we will need to inform the link layer where it should forward it to */
+int forward(int toAddress){
+    forwarding_table table;
+
+    // Initialize forwarding table
+    init_forwardtable(&table);
+
+    // Find the station
+    for (int station = 0; station < table.size; ++station) {
+        if (get_ThisStation() == table.table[station].station) {
+            for (int connection = 0; connection < (sizeof(table.table[station].connections) / table.table[station].connections[0]); ++connection) {
+                if (table.table[station].connections[connection] == toAddress) {
+                    return toAddress;
+                }
+            }
+            return round_robin(table.table[station].connections);
+        }
+    }
 }
 
 /* Listen to relevant events for network layer, and act upon them */

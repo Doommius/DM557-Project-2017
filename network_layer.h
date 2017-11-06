@@ -19,13 +19,13 @@ typedef struct {                        /* datagrams are transported in this lay
 } datagram;
 
 typedef struct {
-    int station;    // Address of station
-    int connections[];
-    int length;
+    int station;        // Address of station
+    int connections[];  // Addresses of connected stations
 } forwarding_field;
 
 typedef struct {
     forwarding_field table[];
+    int size;
 } forwarding_table;
 
 
