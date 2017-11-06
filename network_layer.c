@@ -40,19 +40,21 @@ void network_layer_main_loop(){
     FifoQueueEntry e;
     datagram d;
 
+    int ThisStation;
+    ThisStation = get_ThisStation();
     FifoQueue for_queue;
     FifoQueue from_queue;
-
+    printf("%d\n", ThisStation);
 
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
             case network_layer_allowed_to_send:
 
+
                 break;
 
             case data_from_link_layer:
-
 
                 break;
             case data_from_transport_layer:

@@ -98,6 +98,8 @@ void init_max_seqnr(unsigned int o);
 
 unsigned int get_timedout_seqnr(void);
 
+int get_ThisStation();
+
 /* Macro inc is expanded in-line: Increment k circularly. */
 #define inc(k) if (k < MAX_SEQ) k = k + 1; else k = 0
 

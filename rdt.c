@@ -146,10 +146,8 @@ void FakeTransportLayer1(){
             case data_for_transport_layer:
 
                 printf("Fik signal fra Network Layer\n");
-                while (!EmptyFQ(from_queue) ){
-                    e = DequeueFQ(from_queue);
-                    printf("%s\n",(char *) e->val);
-                }
+                e = DequeueFQ(from_queue);
+                printf("%s\n", e->val);
 
                 break;
         }
@@ -602,6 +600,10 @@ void stop_ack_timer(int station) {
         free(msg);
     }
     ack_timer_id[station] = -1;
+}
+
+int get_ThisStation(){
+    return ThisStation;
 }
 
 
