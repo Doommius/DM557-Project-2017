@@ -102,8 +102,8 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
 
-
-void FakeTransportLayer(){
+//Sends messages
+void FakeTransportLayer1(){
     initialize_locks_and_queues();
     char *buffer;
     int i, j;
@@ -121,8 +121,8 @@ void FakeTransportLayer(){
 
 
 
-    from_queue = (FifoQueue) get_from_network_layer_queue();
-    for_queue = (FifoQueue) get_for_network_layer_queue();
+    from_queue = (FifoQueue) get_queue_NtoT();
+    for_queue = (FifoQueue) get_queue_TtoN();
 
     // Setup some messages
     for (i = 0; i < 20; i++) {
@@ -144,11 +144,54 @@ void FakeTransportLayer(){
         Wait(&event, events_we_handle);
         switch (event.type){
             case data_for_transport_layer:
+
                 printf("Fik signal fra Network Layer\n");
-                while (!EmptyFQ(from_queue) ){
-                    e = DequeueFQ(from_queue);
-                    printf("%s\n",(char *) e->val);
-                }
+                e = DequeueFQ(from_queue);
+                printf("%s\n", e->val);
+
+                break;
+        }
+
+    }
+}
+
+
+//Recieves messages
+void FakeTransportLayer2(){
+    initialize_locks_and_queues();
+    char *buffer;
+    int i, j;
+    event_t event;
+    long int events_we_handle;
+    FifoQueueEntry e;
+    packet p;
+
+
+    //TODO Bedre queue navne
+    //TODO Maybe rename to From_network_queue
+    //TODO and For_Network_queue or to_Network_queue?
+    FifoQueue from_queue;                /* Queue for data from network layer */
+    FifoQueue for_queue;    /* Queue for data for the network layer */
+
+
+
+    from_queue = (FifoQueue) get_queue_NtoT();
+    for_queue = (FifoQueue) get_queue_TtoN();
+
+    events_we_handle = data_for_transport_layer;
+
+    sleep(2);
+
+    printf("Last = %s\n", (char *)for_queue->last->val);
+    i = 0;
+    j = 0;
+
+    Signal(data_from_transport_layer, NULL);
+    while(true){
+        Wait(&event, events_we_handle);
+        switch (event.type){
+            case data_for_transport_layer:
+
                 break;
         }
 
@@ -156,7 +199,6 @@ void FakeTransportLayer(){
 }
 
 void FakeNetworkLayer(){
-    initialize_locks_and_queues();
     char *buffer;
     int i, j;
 
@@ -560,6 +602,10 @@ void stop_ack_timer(int station) {
     ack_timer_id[station] = -1;
 }
 
+int get_ThisStation(){
+    return ThisStation;
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -585,7 +631,7 @@ int main(int argc, char *argv[]) {
 */
 
 
-    ACTIVATE(1, FakeTransportLayer);
+    ACTIVATE(1, FakeTransportLayer1);
     ACTIVATE(1, FakeNetworkLayer);
 
     /* simuleringen starter */
