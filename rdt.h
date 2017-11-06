@@ -12,19 +12,39 @@
 #define network_layer_allowed_to_send  0x00000004
 #define network_layer_ready            0x00000008
 #define data_for_network_layer         0x00000010
+#define data_for_transport_layer       0x00000020
+#define data_from_transport_layer      0x00000040
+#define data_for_link_layer            0x00000080
+#define data_from_link_layer           0x00000100
+
 
 #define frame_timer_timeout_millis  250
 #define act_timer_timeout_millis     50
 
 #define MAX_PKT 8        /* determines packet size in bytes */
+#define MAX_SEG 8
 
 typedef enum {
     false, true
 } boolean;        /* boolean type */
+
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
+
 typedef struct {
     char data[MAX_PKT];
+
+    int source;
+    int dest;
 } packet;        /* packet definition */
+
+
+typedef struct{
+    char data;
+    int source;
+    int dest;
+} segment;      /* Segment definition */
+
+
 typedef enum {
     DATA, ACK, NAK
 } frame_kind;        /* frame_kind definition */
@@ -37,8 +57,9 @@ typedef struct {        /* frames are transported in this layer */
     packet info;          /* the network layer packet */
     int sendTime;
     int recvTime;
-    int source;          /* Where the package is coming from*/
-    int dest;           /* Where the package is going to*/
+
+    int source;         /* Source station */
+    int dest;           /* Destination station */
 } frame;
 
 /* init_frame fills in default initial values in a frame. Protocols should
@@ -48,17 +69,11 @@ typedef struct {        /* frames are transported in this layer */
  */
 void init_frame(frame *s, int count);
 
-/* Fetch a packet from the network layer for transmission on the channel. */
-void from_network_layer(packet *p);
-
-/* Deliver information from an inbound frame to the network layer. */
-void to_network_layer(packet *p);
-
 /* Go get an inbound frame from the physical layer and copy it to r. */
 int from_physical_layer(frame *r);
 
 /* Pass the frame to the physical layer for transmission. */
-void to_physical_layer(frame *s);
+void to_physical_layer(frame *r);
 
 /* Start the clock running and enable the timeout event. */
 void start_timer(seq_nr k, int station);
@@ -71,13 +86,6 @@ void start_ack_timer(int station);
 
 /* Stop the auxiliary timer and disable the ack_timeout event. */
 void stop_ack_timer(int station);
-
-/* Allow the network layer to cause a network_layer_ready event. */
-void enable_network_layer(int station);
-
-/* Forbid the network layer from causing a network_layer_ready event. */
-void disable_network_layer(int station);
-
 /* In case of a timeout event, it is possible to find out the sequence
  * number of the frame that timed out (this is the sequence number parameter
  * in the start_timer function). For this, the simulator must know the maximum

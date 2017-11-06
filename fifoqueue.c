@@ -66,27 +66,27 @@ void EnqueueFQ(FifoQueueEntry e, FifoQueue Q)
 FifoQueueEntry DequeueFQ(FifoQueue Q)
 {
   FifoQueueEntry e;
-
   if (EmptyFQ(Q))
     return NULL;
   else
     {
       /* Det første element fjernes fra listen */
       e = Q->first;
-
       /* er der et eller flere elementer tilbage? */
       if ( e->next == NULL)
 	{
 	  /* der er kun et element tilbage */
 	  Q->first = NULL;
 	  Q->last  = NULL;
-	}
+
+    }
       else
 	{
 	  /* elementet bagved det aktuelle element opdateres */
 	  Q->first       = e->next;
-	  Q->first->prev = NULL; 
-	}
+	  Q->first->prev = NULL;
+
+    }
       e->next  = NULL;
       e->prev  = NULL;
       return e;
