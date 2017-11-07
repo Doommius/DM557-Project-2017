@@ -102,6 +102,14 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
 
+FifoQueue get_from_queue(){
+    return (FifoQueue) from_network_layer_queue;
+}
+
+FifoQueue get_for_queue(){
+    return (FifoQueue) for_network_layer_queue;
+}
+
 //Sends messages
 void FakeTransportLayer1(){
     initialize_locks_and_queues();
@@ -110,7 +118,13 @@ void FakeTransportLayer1(){
     event_t event;
     long int events_we_handle;
     FifoQueueEntry e;
-    packet p;
+    packet *p;
+
+
+
+    //TODO Smid ind i initialize
+    from_network_layer_queue = InitializeFQ();
+    for_network_layer_queue = InitializeFQ();
 
 
     //TODO Bedre queue navne
@@ -119,25 +133,30 @@ void FakeTransportLayer1(){
     FifoQueue from_queue;                /* Queue for data from network layer */
     FifoQueue for_queue;    /* Queue for data for the network layer */
 
-
-
     from_queue = (FifoQueue) get_queue_NtoT();
     for_queue = (FifoQueue) get_queue_TtoN();
 
     // Setup some messages
     for (i = 0; i < 20; i++) {
+        p = (packet *) malloc(sizeof(packet));
         buffer = (char *) malloc(sizeof(char) * MAX_PKT);
         sprintf(buffer, "D: %d", i);
-        EnqueueFQ(NewFQE((void *) buffer), for_queue);
+
+        strcpy(p->data, buffer);
+        p->dest = 4;
+        p->source = ThisStation;
+
+        EnqueueFQ(NewFQE((void *) p), for_queue);
     }
 
     events_we_handle = data_for_transport_layer;
 
     sleep(2);
 
-    printf("Last = %s\n", (char *)for_queue->last->val);
     i = 0;
     j = 0;
+
+
 
     Signal(data_from_transport_layer, NULL);
     while(true){
@@ -162,7 +181,7 @@ void FakeTransportLayer2(){
     event_t event;
     long int events_we_handle;
     FifoQueueEntry e;
-    packet p;
+    packet *p;
 
 
     //TODO Bedre queue navne
@@ -180,16 +199,19 @@ void FakeTransportLayer2(){
 
     sleep(2);
 
-    printf("Last = %s\n", (char *)for_queue->last->val);
-    i = 0;
-    j = 0;
-
-    Signal(data_from_transport_layer, NULL);
     while(true){
         Wait(&event, events_we_handle);
         switch (event.type){
             case data_for_transport_layer:
+                Lock(network_layer_lock);
 
+                printf("Fik besked i transport laget\n");
+                e = DequeueFQ(from_queue);
+                //p = e->val;
+                //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
+                logLine(succes, "Received message: %s\n", ((char *) e->val));
+
+                Unlock(network_layer_lock);
                 break;
         }
 
@@ -204,7 +226,7 @@ void FakeNetworkLayer(){
 
     event_t event;
     FifoQueueEntry e;
-
+    sleep(2);
 
 
     //events_we_handle = data_from_transport_layer | data_for_link_layer | data_from_link_layer;
@@ -419,7 +441,6 @@ void selective_repeat() {
 
     while (true) {
         // Wait for any of these events
-
         Wait(&event, events_we_handle);
         log_event_received(event.type);
 
@@ -505,6 +526,7 @@ void selective_repeat() {
         }
     }
 }
+
 
 void print_frame(frame *s, char *direction) {
     char temp[MAX_PKT + 1];
@@ -621,17 +643,25 @@ int main(int argc, char *argv[]) {
 
 
     /* processerne aktiveres */
-
+/*
     ACTIVATE(1, FakeNetworkLayer1);
     ACTIVATE(2, FakeNetworkLayer2);
     ACTIVATE(1, selective_repeat);
     ACTIVATE(2, selective_repeat);
-
-
-/*
-    ACTIVATE(1, FakeTransportLayer1);
-    ACTIVATE(1, FakeNetworkLayer);
 */
+
+
+    ACTIVATE(1, FakeTransportLayer1);
+    ACTIVATE(2, FakeTransportLayer2);
+
+
+    ACTIVATE(1, FakeNetworkLayer);
+    ACTIVATE(2, FakeNetworkLayer);
+
+
+    ACTIVATE(1, selective_repeat);
+    ACTIVATE(2, selective_repeat);
+
     /* simuleringen starter */
     Start();
     exit(0);

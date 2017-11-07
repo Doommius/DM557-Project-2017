@@ -31,7 +31,7 @@ boolean network_layer_enabled[NR_BUFS];
 void initialize_locks_and_queues(){
 
     queue_TtoN = InitializeFQ();
-    queue_NtoT= InitializeFQ();
+    queue_NtoT = InitializeFQ();
     queue_LtoN = InitializeFQ();
     queue_NtoL = InitializeFQ();
 
@@ -42,7 +42,7 @@ void initialize_locks_and_queues(){
     Init_lock(write_lock);
     Init_lock(network_layer_lock);
 }
-
+/*
 void init_forwardtable(forwarding_table *table) {
     table->table = {{1, {2, 3}},
                     {2, {1, 4}},
@@ -57,9 +57,11 @@ int round_robin(int connections[]) {
     int random_index = rand() % (sizeof(connections) / sizeof(connections[0]));
     return connections[random_index];
 }
+*/
 
 /* Where should a datagram be sent to. Transport layer knows only end hosts,
  * but we will need to inform the link layer where it should forward it to */
+/*
 int forward(int toAddress){
     forwarding_table table;
 
@@ -78,10 +80,11 @@ int forward(int toAddress){
         }
     }
 }
+*/
 
 /* Listen to relevant events for network layer, and act upon them */
 void network_layer_main_loop(){
-    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_link_layer | data_for_network_layer;
+    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_network_layer;
     event_t event;
     FifoQueueEntry e;
     datagram d;
@@ -93,6 +96,13 @@ void network_layer_main_loop(){
     FifoQueue for_queue;
     FifoQueue from_queue;
 
+    FifoQueue from_network_layer_queue;
+    FifoQueue for_network_layer_queue;
+
+    from_network_layer_queue = get_from_queue();
+    for_network_layer_queue = get_for_queue();
+
+    i = 0;
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
@@ -112,28 +122,37 @@ void network_layer_main_loop(){
             case data_for_network_layer:
                 Lock(network_layer_lock);
 
-                e = DequeueFQ(queue_TtoN);
-                logLine(succes, "Received message: %s\n", ((char *) e->val));
-
+                printf("Fik besked gennem link lag\n");
+                e = DequeueFQ(for_network_layer_queue);
+                //logLine(succes, "Received message: %s\n", ((char *) e->val));
+                //EnqueueFQ(NewFQE((void *) &d2->data),from_queue);
                 Unlock(network_layer_lock);
 
                 break;
+
             case data_from_transport_layer:
                 printf("Fik signal, laver datagram:\n");
                 for_queue = (FifoQueue) get_queue_TtoN();
                 from_queue = (FifoQueue) get_queue_NtoT();
+                packet *p;
 
                 e = DequeueFQ(for_queue);
-                strcpy(d.data, e->val);
-                printf("Datagram data: %s\n", d.data);
+
+                p = (packet *) e->val;
+                printf("Fik pakcet: %s\n", (char *) p->data);
+
+
+                EnqueueFQ(e, from_network_layer_queue);
+
 
                 //printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
-                //TODO Det her skal ikke være her, det er bare en test
-                printf("Signalerer transport laget\n");
-                Signal(data_for_transport_layer, NULL);
 
                 break;
 
+        }
+        if (i >= 20){
+            sleep(5);
+            Stop();
         }
     }
 }
@@ -142,6 +161,7 @@ void network_layer_main_loop(){
  * relevant queue is not empty, and that the link layer has allowed us to send
  * to the neighbour  */
 void signal_link_layer_if_allowed(int address){
+
 
 }
 
@@ -196,8 +216,6 @@ void disable_network_layer(int station, boolean network_layer_allowance_list[], 
 }
 
 
-//TODO Bedre funktions navne
-//TODO But how? aren't they descriptive as they are?
 
 FifoQueue *get_queue_NtoT(){
     return (FifoQueue *) queue_NtoT;
