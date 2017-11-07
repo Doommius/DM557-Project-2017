@@ -26,8 +26,8 @@ typedef struct {
 } forwarding_field;
 
 typedef struct {
-    forwarding_field table[];
     int size;
+    forwarding_field table[];
 } forwarding_table;
 
 
