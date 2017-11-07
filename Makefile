@@ -45,7 +45,7 @@ ifeq "$(UNAME)" "Darwin"
 CFLAGS  = -O3 -Wall -pedantic $(DEFS) -I. -I./include
 LDFLAGS += -L. -L./lib -lsubnet -pthread
 else
-CFLAGS  = -O3 -Wall -pedantic $(DEFS) -I. -I./include
+CFLAGS  = -O3 -std=c11 -Wall -pedantic $(DEFS) -I. -I./include
 LDFLAGS += -L. -L./lib -pthread -lsubnet
 endif
 

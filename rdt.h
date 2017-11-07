@@ -9,17 +9,17 @@
 #define RDT_H_
 
 /* Events */
-#define network_layer_allowed_to_send  0x00000004
-#define network_layer_ready            0x00000008
-#define data_for_network_layer         0x00000010
-#define data_for_transport_layer       0x00000020
-#define data_from_transport_layer      0x00000040
-#define data_for_link_layer            0x00000080
-#define data_from_link_layer           0x00000100
+#define NETWORK_LAYER_ALLOWED_TO_SEND  0x00000004
+#define NETWORK_LAYER_READY            0x00000008
+#define DATA_FOR_NETWORK_LAYER         0x00000010
+#define DATA_FOR_TRANSPORT_LAYER       0x00000020
+#define DATA_FROM_TRANSPORT_LAYER      0x00000040
+#define DATA_FOR_LINK_LAYER            0x00000080
+#define DATA_FROM_LINK_LAYER           0x00000100
 
 
-#define frame_timer_timeout_millis  250
-#define act_timer_timeout_millis     50
+#define FRAME_TIMER_TIMEOUT_MILLIS  250
+#define ACT_TIMER_TIMEOUT_MILLIS     50
 
 #define MAX_PKT 8        /* determines packet size in bytes */
 #define MAX_SEG 8

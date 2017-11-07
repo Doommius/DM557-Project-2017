@@ -131,7 +131,7 @@ void FakeTransportLayer1(){
         EnqueueFQ(NewFQE((void *) buffer), for_queue);
     }
 
-    events_we_handle = data_for_transport_layer;
+    events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
     sleep(2);
 
@@ -139,11 +139,11 @@ void FakeTransportLayer1(){
     i = 0;
     j = 0;
 
-    Signal(data_from_transport_layer, NULL);
+    Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
     while(true){
         Wait(&event, events_we_handle);
         switch (event.type){
-            case data_for_transport_layer:
+            case DATA_FOR_TRANSPORT_LAYER:
 
                 printf("Fik signal fra Network Layer\n");
 
@@ -176,7 +176,7 @@ void FakeTransportLayer2(){
     from_queue = (FifoQueue) get_queue_NtoT();
     for_queue = (FifoQueue) get_queue_TtoN();
 
-    events_we_handle = data_for_transport_layer;
+    events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
     sleep(2);
 
@@ -184,11 +184,11 @@ void FakeTransportLayer2(){
     i = 0;
     j = 0;
 
-    Signal(data_from_transport_layer, NULL);
+    Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
     while(true){
         Wait(&event, events_we_handle);
         switch (event.type){
-            case data_for_transport_layer:
+            case DATA_FOR_TRANSPORT_LAYER:
 
                 break;
         }
@@ -249,7 +249,7 @@ void FakeNetworkLayer1() {
         EnqueueFQ(NewFQE((void *) buffer), from_network_layer_queue);
     }
 
-    events_we_handle = network_layer_allowed_to_send | data_for_network_layer;
+    events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_NETWORK_LAYER;
 
     // Give selective repeat a chance to start
     sleep(2);
@@ -260,18 +260,18 @@ void FakeNetworkLayer1() {
         // Wait until we are allowed to transmit
         Wait(&event, events_we_handle);
         switch (event.type) {
-            case network_layer_allowed_to_send:
+            case NETWORK_LAYER_ALLOWED_TO_SEND:
                 Lock(network_layer_lock);
                 if (i < 20 && network_layer_enabled[ThisStation]) {
                     // Signal element is ready
                     logLine(info, "Sending signal for message #%d\n", i);
                     network_layer_enabled[ThisStation] = false;
-                    Signal(network_layer_ready, NULL);
+                    Signal(NETWORK_LAYER_READY, NULL);
                     i++;
                 }
                 Unlock(network_layer_lock);
                 break;
-            case data_for_network_layer:
+            case DATA_FOR_NETWORK_LAYER:
                 Lock(network_layer_lock);
 
                 e = DequeueFQ(for_network_layer_queue);
@@ -307,7 +307,7 @@ void FakeNetworkLayer2() {
     from_network_layer_queue = InitializeFQ();
     for_network_layer_queue = InitializeFQ();
 
-    events_we_handle = network_layer_allowed_to_send | data_for_network_layer;
+    events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_NETWORK_LAYER;
 
     j = 0;
     while (true) {
@@ -315,17 +315,17 @@ void FakeNetworkLayer2() {
         Wait(&event, events_we_handle);
 
         switch (event.type) {
-            case network_layer_allowed_to_send:
+            case NETWORK_LAYER_ALLOWED_TO_SEND:
                 Lock(network_layer_lock);
                 if (network_layer_enabled[ThisStation] && !EmptyFQ(from_network_layer_queue)) {
                     logLine(info, "Signal from network layer for message\n");
                     network_layer_enabled[ThisStation] = false;
-                    ClearEvent(network_layer_ready); // Don't want to signal too many events
-                    Signal(network_layer_ready, NULL);
+                    ClearEvent(NETWORK_LAYER_READY); // Don't want to signal too many events
+                    Signal(NETWORK_LAYER_READY, NULL);
                 }
                 Unlock(network_layer_lock);
                 break;
-            case data_for_network_layer:
+            case DATA_FOR_NETWORK_LAYER:
                 Lock(network_layer_lock);
 
                 e = DequeueFQ(for_network_layer_queue);
@@ -399,7 +399,7 @@ void selective_repeat() {
     }
 
 
-    events_we_handle = frame_arrival | timeout | network_layer_ready;
+    events_we_handle = frame_arrival | timeout | NETWORK_LAYER_READY;
 
 
     /*
@@ -424,7 +424,7 @@ void selective_repeat() {
         log_event_received(event.type);
 
         switch (event.type) {
-            case network_layer_ready:        /* accept, save, and transmit a new frame */
+            case NETWORK_LAYER_READY:        /* accept, save, and transmit a new frame */
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
@@ -557,7 +557,7 @@ void start_timer(seq_nr k, int station) {
     msg = (char *) malloc(100 * sizeof(char));
     sprintf(msg, "%d", k); // Save seq_nr in message
 
-    timer_ids[k % NR_BUFS][station] = SetTimer(frame_timer_timeout_millis, (void *) msg);
+    timer_ids[k % NR_BUFS][station] = SetTimer(FRAME_TIMER_TIMEOUT_MILLIS, (void *) msg);
 
     logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station], msg);
 
@@ -584,7 +584,7 @@ void start_ack_timer(int station) {
         char *msg;
         msg = (char *) malloc(100 * sizeof(char));
         strcpy(msg, "Ack-timer");
-        ack_timer_id[station] = SetTimer(act_timer_timeout_millis, (void *) msg);
+        ack_timer_id[station] = SetTimer(ACT_TIMER_TIMEOUT_MILLIS, (void *) msg);
         logLine(debug, "Ack-timer startet med id %d\n", ack_timer_id[station]);
     }
 }

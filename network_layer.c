@@ -26,6 +26,12 @@ mlock_t *write_lock;
 
 boolean network_layer_enabled[NR_BUFS];
 
+//static forwarding_table table[] {
+//    {1, {2, 3},},
+//    {2, {1, 4},},
+//    {3, {1, 4},},
+//    {4, {2, 3},},
+//};
 
 /* Make sure all locks and queues are initialized properly */
 void initialize_locks_and_queues(){
@@ -43,14 +49,44 @@ void initialize_locks_and_queues(){
     Init_lock(network_layer_lock);
 }
 
-void init_forwardtable(forwarding_table *table) {
-    table->table = {{1, {2, 3}},
-                    {2, {1, 4}},
-                    {3, {1, 4}},
-                    {4, {2, 3}}};
+/*
+ * Initializes a global table, that all stations can read. The table is hardcoded
+ * and
+ */
+void init_forwardtable(forwarding_table *thisTable) {
+    thisTable->table = (forwarding_field *) malloc(sizeof(forwarding_field) * 4);
 
-    table->size = sizeof(table->table) / sizeof(forwarding_field);
-    printf("Size of forwarding table: %i\n", table->size);
+    for (int i = 0; i < 4; ++i) {
+        thisTable->table[i].connections = (int *) malloc(sizeof(int) * 2);
+    }
+
+    thisTable->table[0].station = 1;
+    thisTable->table[0].connections[0] = 2;
+    thisTable->table[0].connections[1] = 3;
+
+    thisTable->table[1].station = 2;
+    thisTable->table[1].connections[0] = 1;
+    thisTable->table[1].connections[1] = 4;
+
+    thisTable->table[2].station = 3;
+    thisTable->table[2].connections[0] = 1;
+    thisTable->table[2].connections[1] = 4;
+
+    thisTable->table[3].station = 4;
+    thisTable->table[3].connections[0] = 2;
+    thisTable->table[3].connections[1] = 3;
+//    thisTable->table = (struct forwarding_field){{1, {2, 3}},
+//                        {2, {1, 4}},
+//                        {3, {1, 4}},
+//                        {4, {2, 3}}};
+
+//    table->table[0] = {1, {2, 3}};
+//    table->table[1] = {2, {1, 4}};
+//    table->table[2] = {3, {1, 4}},
+//            table->table[3] =               {4, {2, 3}};
+
+    thisTable->size = sizeof(thisTable->table) / sizeof(forwarding_field);
+    printf("Size of forwarding table: %i\n", thisTable->size);
 }
 
 int round_robin(int connections[]) {
@@ -81,7 +117,7 @@ int forward(int toAddress){
 
 /* Listen to relevant events for network layer, and act upon them */
 void network_layer_main_loop(){
-    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_link_layer | data_for_network_layer;
+    long int events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FROM_TRANSPORT_LAYER | DATA_FOR_LINK_LAYER | DATA_FOR_NETWORK_LAYER;
     event_t event;
     FifoQueueEntry e;
     datagram d;
@@ -96,20 +132,20 @@ void network_layer_main_loop(){
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
-            case network_layer_allowed_to_send:
+            case NETWORK_LAYER_ALLOWED_TO_SEND:
                 Lock(network_layer_lock);
                 if (i < 20 && network_layer_enabled[ThisStation]) {
                     // Signal element is ready
                     logLine(info, "Sending signal for message #%d\n", i);
                     network_layer_enabled[ThisStation] = false;
-                    Signal(network_layer_ready, NULL);
+                    Signal(NETWORK_LAYER_READY, NULL);
                     i++;
                 }
                 Unlock(network_layer_lock);
 
                 break;
 
-            case data_for_network_layer:
+            case DATA_FOR_NETWORK_LAYER:
                 Lock(network_layer_lock);
 
                 e = DequeueFQ(queue_TtoN);
@@ -118,7 +154,7 @@ void network_layer_main_loop(){
                 Unlock(network_layer_lock);
 
                 break;
-            case data_from_transport_layer:
+            case DATA_FROM_TRANSPORT_LAYER:
                 printf("Fik signal, laver datagram:\n");
                 for_queue = (FifoQueue) get_queue_TtoN();
                 from_queue = (FifoQueue) get_queue_NtoT();
@@ -130,7 +166,7 @@ void network_layer_main_loop(){
                 //printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
                 //TODO Det her skal ikke være her, det er bare en test
                 printf("Signalerer transport laget\n");
-                Signal(data_for_transport_layer, NULL);
+                Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
 
                 break;
 
@@ -177,14 +213,14 @@ void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *net
 
     Unlock(network_layer_lock);
 
-    Signal(data_for_network_layer, NULL);
+    Signal(DATA_FOR_NETWORK_LAYER, NULL);
 }
 
 void enable_network_layer(int station, boolean network_layer_allowance_list[], mlock_t *network_layer_lock) {
     Lock(network_layer_lock);
     logLine(trace, "enabling network layer\n");
     network_layer_allowance_list[station] = true;
-    Signal(network_layer_allowed_to_send, NULL);
+    Signal(NETWORK_LAYER_ALLOWED_TO_SEND, NULL);
     Unlock(network_layer_lock);
 }
 

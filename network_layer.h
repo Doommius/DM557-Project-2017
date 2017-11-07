@@ -22,15 +22,13 @@ typedef struct {                        /* datagrams are transported in this lay
 
 typedef struct {
     int station;        // Address of station
-    int connections[];  // Addresses of connected stations
+    int *connections;  // Addresses of connected stations
 } forwarding_field;
 
 typedef struct {
-    forwarding_field table[];
     int size;
+    forwarding_field *table;
 } forwarding_table;
-
-
 
 /* Make sure all locks and queues are initialized properly */
 void initialize_locks_and_queues();
