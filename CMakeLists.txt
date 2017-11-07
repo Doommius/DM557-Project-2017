@@ -49,7 +49,7 @@ set(SOURCE_FILES
         Wait.c network_layer.h events.h events.c network_layer.c "debugging folder/main.cpp")
 
 set(SOURCE_FILES_mynetwork rdt.c rdt.h debug.c debug.h fifoqueue.h fifoqueue.c subnetsupport.h subnet.h priqueue.c priqueue.h Signal.c subnet.c Wait.c Stop.c Activate.c ClearEvent.c FromSubnet.c ToSubnet.c Start.c signalhandler.c shell.c flow.c errortimer.c timer.c
-        receiver.c control.c re_delay_frame.c transfer_frame.c transmit_error.c delay_frame.c subnetsupport.c)
+        receiver.c control.c re_delay_frame.c transfer_frame.c transmit_error.c delay_frame.c subnetsupport.c network_layer.c network_layer.h events.c events.h)
 
 set(SOURCE_FILES_network network.c)
 
