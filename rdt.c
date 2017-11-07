@@ -143,7 +143,9 @@ void FakeTransportLayer1(){
         sprintf(buffer, "D: %d", i);
 
         strcpy(p->data, buffer);
-        p->dest = 4;
+
+        p->dest = 2;
+
         p->source = ThisStation;
 
         EnqueueFQ(NewFQE((void *) p), for_queue);
@@ -181,6 +183,9 @@ void FakeTransportLayer2(){
     packet *p;
 
 
+    from_network_layer_queue = InitializeFQ();
+    for_network_layer_queue = InitializeFQ();
+
     //TODO Bedre queue navne
     //TODO Maybe rename to From_network_queue
     //TODO and For_Network_queue or to_Network_queue?
@@ -196,7 +201,6 @@ void FakeTransportLayer2(){
 
     sleep(2);
 
-    printf("Last = %s\n", (char *)for_queue->last->val);
     i = 0;
     j = 0;
 
@@ -452,6 +456,8 @@ void selective_repeat() {
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
 
+                printf("Network layer ready\n");
+
                 r.source = ThisStation;
                 if (ThisStation == 2){
                     r.dest = 1;
@@ -478,6 +484,7 @@ void selective_repeat() {
                         while (arrived[frame_expected % NR_BUFS]) {
                             /* Pass frames and advance window. */
                             to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
+
 
                             if (EmptyFQ(for_network_layer_queue)){
                                 printf("Tom\n");

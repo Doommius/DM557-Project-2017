@@ -198,7 +198,6 @@ void network_layer_main_loop() {
                 p = e->val;
                 printf("Fik packet: %s\n", (char *) p->data);
 
-
                 EnqueueFQ(e, from_network_layer_queue);
                 signal_link_layer_if_allowed(p->dest);
 
