@@ -131,11 +131,11 @@ int forward(int toAddress) {
 
 /* Listen to relevant events for network layer, and act upon them */
 void network_layer_main_loop() {
-    long int events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_TRANSPORT_LAYER | DATA_FOR_NETWORK_LAYER;
+    long int events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_NETWORK_LAYER | DATA_FROM_TRANSPORT_LAYER | DONE_SENDING;
     event_t event;
     FifoQueueEntry e;
     datagram d;
-    int i;
+    int i, j;
 
     int ThisStation;
     ThisStation = get_ThisStation();
@@ -147,28 +147,33 @@ void network_layer_main_loop() {
     FifoQueue for_network_layer_queue;
 
     from_network_layer_queue = get_from_queue();
+    for_network_layer_queue = get_for_queue();
 
 
     i = 0;
+    j = 0;
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
             case NETWORK_LAYER_ALLOWED_TO_SEND:
                 Lock(network_layer_lock);
-                if (i < 20 && network_layer_enabled[ThisStation]) {
+
+                printf("Network layer allowed to send\n");
+                if (network_layer_enabled[ThisStation] && !EmptyFQ(from_network_layer_queue)) {
                     // Signal element is ready
                     logLine(info, "Sending signal for message #%d\n", i);
                     network_layer_enabled[ThisStation] = false;
                     Signal(NETWORK_LAYER_READY, NULL);
-                    i++;
                 }
                 Unlock(network_layer_lock);
-
+                //printf("Kom ud af lock\n");
                 break;
 
             case DATA_FOR_NETWORK_LAYER:
+                printf("Data for network layer\n");
                 Lock(network_layer_lock);
                 for_network_layer_queue = get_for_queue();
+                from_queue = (FifoQueue) get_queue_NtoT();
 
                 packet *p2;
 
@@ -176,13 +181,12 @@ void network_layer_main_loop() {
 
                 p2 = (packet *) e->val;
 
-                if(EmptyFQ(for_network_layer_queue)){
-                    printf("tom\n");
-                }
-
                 printf("Fik besked gennem link lag, data of packet: %s\n", p2->data);
-                //logLine(succes, "Received message: %s\n", ((char *) e->val));
-                //EnqueueFQ(NewFQE((void *) &d2->data),from_queue);
+
+                EnqueueFQ(NewFQE((void *) p2), from_queue);
+                printf("Signalerer transport laget\n");
+                Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
+
                 Unlock(network_layer_lock);
 
                 break;
@@ -191,25 +195,27 @@ void network_layer_main_loop() {
                 printf("Fik signal, laver datagram:\n");
                 for_queue = (FifoQueue) get_queue_TtoN();
                 from_queue = (FifoQueue) get_queue_NtoT();
-                packet *p;
+                while (j < 20){
+                    packet *p;
 
-                e = DequeueFQ(for_queue);
+                    e = DequeueFQ(for_queue);
 
-                p = e->val;
-                printf("Fik packet: %s\n", (char *) p->data);
+                    p = e->val;
+                    printf("Fik packet: %s\n", (char *) p->data);
 
-                EnqueueFQ(e, from_network_layer_queue);
-                signal_link_layer_if_allowed(p->dest);
+                    EnqueueFQ(e, from_network_layer_queue);
+                    signal_link_layer_if_allowed(p->dest);
+                    j++;
+                }
+                printf("Gjort klar til selective repeat\n");
+                break;
 
-                //printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
-                //TODO Det her skal ikke være her, det er bare en test
-                printf("Signalerer transport laget\n");
-                Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
-
+            case DONE_SENDING:
+                i++;
                 break;
 
         }
-        if (i >= 20) {
+        if (i >= 1 && EmptyFQ(from_network_layer_queue) && EmptyFQ(for_network_layer_queue)) {
             sleep(5);
             Stop();
         }
@@ -224,8 +230,11 @@ void network_layer_main_loop() {
 void signal_link_layer_if_allowed(int address) {
     FifoQueue queue;
     queue = get_from_queue();
+    int ThisStation;
+    ThisStation = get_ThisStation();
+    printf("Network layer enabled for address? %i. Network layer enabled for ThisStation? %i\n", network_layer_enabled[address], network_layer_enabled[ThisStation]);
 
-    if (EmptyFQ(queue) == 0 && network_layer_enabled[address]) {
+    if (!EmptyFQ(queue) && network_layer_enabled[ThisStation]) {
         Signal(NETWORK_LAYER_ALLOWED_TO_SEND, NULL);
     }
 }
@@ -240,6 +249,9 @@ void from_network_layer(packet *p, FifoQueue from_network_layer_queue, mlock_t *
     FifoQueueEntry e;
 
     Lock(network_layer_lock);
+    packet *p2;
+    p2 = from_network_layer_queue->first->val;
+    //printf("from_network_layer, packet data: %s\n", p2->data);
     e = DequeueFQ(from_network_layer_queue);
     Unlock(network_layer_lock);
 
@@ -256,11 +268,12 @@ void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *net
     char *buffer;
     Lock(network_layer_lock);
 
-    printf("Packet info %s\n", p->data);
+    //printf("Packet info %s\n", p->data);
     buffer = (char *) malloc(sizeof(char) * (1 + MAX_PKT));
     packet_to_string(p, buffer);
 
     EnqueueFQ(NewFQE((void *) buffer), for_network_layer_queue);
+
 
     Unlock(network_layer_lock);
 

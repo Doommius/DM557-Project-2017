@@ -14,6 +14,7 @@
 #define DATA_FROM_TRANSPORT_LAYER 64
 #define DATA_FOR_LINK_LAYER 128
 #define DATA_FROM_LINK_LAYER 256
+#define DONE_SENDING 512
 
 
 void check_event(long int event, char* event_name);

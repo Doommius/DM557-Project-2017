@@ -33,6 +33,8 @@ void check_event(long int event, char* event_name){
         case DATA_FROM_LINK_LAYER:
             event_name = "data_from_link_layer";
             break;
+        case DONE_SENDING:
+            event_name = "done_sending";
         default:
             event_name = "unknown";
             break;
