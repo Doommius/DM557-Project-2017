@@ -62,9 +62,6 @@ void init_forwardtable(forwarding_table *table) {
 void init_forwardtable(forwarding_table *thisTable) {
     thisTable->table = (forwarding_field *) malloc(sizeof(forwarding_field) * 4);
 
-    //This kinda falls apart if not all host has the same number of connections.
-    table->size = sizeof(table->table) / sizeof(forwarding_field);
-    printf("Size of forwarding table: %i\n", table->size);
     for (int i = 0; i < 4; ++i) {
         thisTable->table[i].connections = (int *) malloc(sizeof(int) * 2);
     }
@@ -134,7 +131,7 @@ int forward(int toAddress) {
 
 /* Listen to relevant events for network layer, and act upon them */
 void network_layer_main_loop() {
-    long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_network_layer;
+    long int events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_TRANSPORT_LAYER | DATA_FOR_NETWORK_LAYER;
     event_t event;
     FifoQueueEntry e;
     datagram d;
@@ -230,7 +227,7 @@ void signal_link_layer_if_allowed(int address) {
     queue = get_from_queue();
 
     if (EmptyFQ(queue) == 0 && network_layer_enabled[address]) {
-        Signal(network_layer_allowed_to_send, NULL);
+        Signal(NETWORK_LAYER_ALLOWED_TO_SEND, NULL);
     }
 }
 
