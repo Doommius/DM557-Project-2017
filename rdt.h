@@ -5,6 +5,8 @@
  *      Author: jacob
  */
 
+#include "fifoqueue.h"
+
 #ifndef RDT_H_
 #define RDT_H_
 
@@ -99,6 +101,10 @@ void init_max_seqnr(unsigned int o);
 unsigned int get_timedout_seqnr(void);
 
 int get_ThisStation();
+
+FifoQueue get_from_queue();
+
+FifoQueue get_for_queue();
 
 /* Macro inc is expanded in-line: Increment k circularly. */
 #define inc(k) if (k < MAX_SEQ) k = k + 1; else k = 0
