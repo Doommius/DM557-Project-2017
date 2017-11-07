@@ -24,12 +24,12 @@ typedef struct {
     int station;        // Address of station
     int connections[];  // Addresses of connected stations
 } forwarding_field;
-/*
+
 typedef struct {
     int size;
     forwarding_field table[];
 } forwarding_table;
-*/
+
 
 
 /* Make sure all locks and queues are initialized properly */

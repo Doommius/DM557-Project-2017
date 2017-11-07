@@ -66,6 +66,7 @@ int round_robin(int connections[]) {
 
 /* Where should a datagram be sent to. Transport layer knows only end hosts,
  * but we will need to inform the link layer where it should forward it to */
+/*
 int forward(int toAddress) {
     forwarding_table table;
 
@@ -75,7 +76,8 @@ int forward(int toAddress) {
     // Find the station
     for (int station = 0; station < table.size; ++station) {
         if (get_ThisStation() == table.table[station].station) {
-            for (int connection = 0; connection < (sizeof(table.table[station].connections) / table.table[station].connections[0]); ++connection) {
+            for (int connection = 0; connection < (sizeof(table.table[station].connections) /
+                                                   table.table[station].connections[0]); ++connection) {
                 if (table.table[station].connections[connection] == toAddress) {
                     return toAddress;
                 }
@@ -87,7 +89,7 @@ int forward(int toAddress) {
 */
 
 /* Listen to relevant events for network layer, and act upon them */
-void network_layer_main_loop(){
+void network_layer_main_loop() {
     long int events_we_handle = network_layer_allowed_to_send | data_from_transport_layer | data_for_network_layer;
     event_t event;
     FifoQueueEntry e;
@@ -104,7 +106,7 @@ void network_layer_main_loop(){
     FifoQueue for_network_layer_queue;
 
     from_network_layer_queue = get_from_queue();
-    for_network_layer_queue = get_for_queue();
+
 
     i = 0;
     while (true) {
@@ -125,9 +127,19 @@ void network_layer_main_loop(){
 
             case data_for_network_layer:
                 Lock(network_layer_lock);
+                for_network_layer_queue = get_for_queue();
 
-                printf("Fik besked gennem link lag\n");
+                packet *p2;
+
                 e = DequeueFQ(for_network_layer_queue);
+
+                p2 = (packet *) e->val;
+
+                if(EmptyFQ(for_network_layer_queue)){
+                    printf("tom\n");
+                }
+
+                printf("Fik besked gennem link lag, data of packet: %s\n", p2->data);
                 //logLine(succes, "Received message: %s\n", ((char *) e->val));
                 //EnqueueFQ(NewFQE((void *) &d2->data),from_queue);
                 Unlock(network_layer_lock);
@@ -142,19 +154,19 @@ void network_layer_main_loop(){
 
                 e = DequeueFQ(for_queue);
 
-                p = (packet *) e->val;
-                printf("Fik pakcet: %s\n", (char *) p->data);
+                p = e->val;
+                printf("Fik packet: %s\n", (char *) p->data);
 
 
                 EnqueueFQ(e, from_network_layer_queue);
-
+                signal_link_layer_if_allowed(p->dest);
 
                 //printf("First: %s\n Last: %s\n", (char *) for_queue->first->val, (char *) for_queue->last->val);
 
                 break;
 
         }
-        if (i >= 20){
+        if (i >= 20) {
             sleep(5);
             Stop();
         }
@@ -167,9 +179,11 @@ void network_layer_main_loop(){
  * to the neighbour
  */
 void signal_link_layer_if_allowed(int address) {
-    if (EmptyFQ(queue_NtoL) == 0 && network_layer_enabled[address]) {
-            Signal(network_layer_allowed_to_send, NULL);
+    FifoQueue queue;
+    queue = get_from_queue();
 
+    if (EmptyFQ(queue) == 0 && network_layer_enabled[address]) {
+        Signal(network_layer_allowed_to_send, NULL);
     }
 }
 
@@ -199,6 +213,7 @@ void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *net
     char *buffer;
     Lock(network_layer_lock);
 
+    printf("Packet info %s\n", p->data);
     buffer = (char *) malloc(sizeof(char) * (1 + MAX_PKT));
     packet_to_string(p, buffer);
 
@@ -224,9 +239,6 @@ void disable_network_layer(int station, boolean network_layer_allowance_list[], 
     Unlock(network_layer_lock);
 }
 
-
-
-FifoQueue *get_queue_NtoT(){
 /**
  * NetworktoTransport
  * @return

@@ -473,10 +473,21 @@ void selective_repeat() {
                         /* Frames may be accepted in any order. */
                         arrived[r.seq % NR_BUFS] = true;        /* mark buffer as full */
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
-                        printf("Packet info: %s\n", r.info.data);
                         while (arrived[frame_expected % NR_BUFS]) {
                             /* Pass frames and advance window. */
                             to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
+
+                            if (EmptyFQ(for_network_layer_queue)){
+                                printf("Tom\n");
+                            }
+                            else {
+                                FifoQueueEntry e;
+                                packet *fuck_dig;
+                                e = for_network_layer_queue->first;
+                                fuck_dig = e->val;
+                                printf("Første packet: %s\n", e->val);
+                            }
+
                             no_nak = true;
                             arrived[frame_expected % NR_BUFS] = false;
                             inc(frame_expected);        /* advance lower edge of receiver's window */
