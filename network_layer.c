@@ -88,8 +88,10 @@ void init_forwardtable(forwarding_table *thisTable) {
 //    table->table[2] = {3, {1, 4}},
 //            table->table[3] =               {4, {2, 3}};
 
-    thisTable->size = sizeof(thisTable->table) / sizeof(forwarding_field);
-    printf("Size of forwarding table: %i\n", thisTable->size);
+//    thisTable->size = sizeof(thisTable->table) / sizeof(forwarding_field);
+    thisTable->size = 4;
+//    printf("TABLE SIZE: %i FIELD SIZE: %i\n ", (int) sizeof(*thisTable->table), (int) sizeof(forwarding_field));
+//    printf("Size of forwarding table: %i\n", thisTable->size);
 }
 
 /**
@@ -111,16 +113,20 @@ int forward(int toAddress) {
     // Initialize forwarding table
     init_forwardtable(&table);
 
+    int rr;
+
     // Find the station
     for (int station = 0; station < table.size; ++station) {
         if (get_ThisStation() == table.table[station].station) {
-            for (int connection = 0; connection < (sizeof(table.table[station].connections) /
-                                                   table.table[station].connections[0]); ++connection) {
+            for (int connection = 0; connection < 2; ++connection) {
                 if (table.table[station].connections[connection] == toAddress) {
+                    printf("TO STATION: %i\n", toAddress);
                     return toAddress;
                 }
             }
-            return round_robin(table.table[station].connections);
+            rr = round_robin(table.table[station].connections);
+            printf("TO STATION RR: %i\n", rr);
+            return rr;
         }
     }
 }
@@ -210,7 +216,7 @@ void network_layer_main_loop() {
                 p = e->val;
 
                 //Test til at se hvor den vil forwarde hen:
-                printf("Pakke fra: %i til: %i, skal forwardes igennem: %i\n", p->source, p->dest, forward(p->dest));
+                printf("Pakke fra: %i til: %i, skal forwardes igennem: %i\n", p->source, p->dest, forward(4));
 
 
                 EnqueueFQ(e, from_network_layer_queue);
