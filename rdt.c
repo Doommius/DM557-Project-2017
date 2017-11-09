@@ -20,7 +20,7 @@
 #define ACTIVATE(n, f) Activate(n, f, #f)
 
 #define MAX_SEQ 127        /* should be 2^n - 1 */
-#define NR_BUFS 4
+#define NR_BUFS 8
 
 /* Globale variable */
 
@@ -88,6 +88,11 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     if (fk == DATA) {
         r->info = buffer[frame_nr % NR_BUFS];
     }
+
+    r->source = ThisStation;
+    r->dest = forward(r->info.dest);
+    printf("Sender frame fra: %i, til %i, forwarder igennem: %i\n", r->source, r->info.dest, r->dest);
+
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
     if (fk == NAK) {
@@ -122,9 +127,6 @@ void FakeTransportLayer1(){
 
 
 
-    //TODO Smid ind i initialize
-    from_network_layer_queue = InitializeFQ();
-    for_network_layer_queue = InitializeFQ();
 
 
     //TODO Bedre queue navne
@@ -144,9 +146,9 @@ void FakeTransportLayer1(){
 
         strcpy(p->data, buffer);
 
-        p->dest = 2;
-
         p->source = ThisStation;
+
+        p->dest = 4;
 
         EnqueueFQ(NewFQE((void *) p), for_queue);
 
@@ -211,7 +213,6 @@ void FakeTransportLayer2(){
     event_t event;
     long int events_we_handle;
     FifoQueueEntry e;
-    packet *p;
 
 
     from_network_layer_queue = InitializeFQ();
@@ -240,14 +241,16 @@ void FakeTransportLayer2(){
         switch (event.type){
             case DATA_FOR_TRANSPORT_LAYER:
                 Lock(network_layer_lock);
+                printf("I transport laget, er from_queue tom? %i\n", EmptyFQ(from_queue));
 
-
-                //printf("Fik besked i transport laget, station %i\n", ThisStation);
 
                 e = DequeueFQ(from_queue);
+
                 packet *p;
 
                 p = e->val;
+
+                printf("Fik besked i transport laget, data: %s, fra: %i, til %i\n", p->data, p->source, p->dest);
 
                 //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
 
@@ -255,8 +258,10 @@ void FakeTransportLayer2(){
 
                 if (j < 10) {
                     ((char *) p->data)[0] = 'd';
-                    p->dest = 1;
                     p->source = ThisStation;
+
+                    p->dest = 1;
+
                     EnqueueFQ(NewFQE((void *) p), for_queue);
                     Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
                 }
@@ -511,13 +516,14 @@ void selective_repeat() {
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
 
-
+                /*
                 r.source = ThisStation;
-                if (ThisStation == 2){
+                if (ThisStation == 4){
                     r.dest = 1;
                 } else {
-                    r.dest = 2;
+                    r.dest = 4;
                 }
+                 */
                 send_frame(DATA, next_frame_to_send, frame_expected, out_buf, &r);        /* transmit the frame */
                 inc(next_frame_to_send);        /* advance upper window edge */
                 break;
@@ -715,18 +721,26 @@ int main(int argc, char *argv[]) {
 */
 
 
+    //Transport Layers for our hosts
     ACTIVATE(1, FakeTransportLayer1);
-    ACTIVATE(2, FakeTransportLayer2);
-    //ACTIVATE(3, FakeTransportLayer2);
+    ACTIVATE(4, FakeTransportLayer2);
 
 
+    //Network Layers for everyone
     ACTIVATE(1, FakeNetworkLayer);
     ACTIVATE(2, FakeNetworkLayer);
-    //ACTIVATE(3, FakeNetworkLayer);
+    ACTIVATE(3, FakeNetworkLayer);
+    ACTIVATE(4, FakeNetworkLayer);
 
+    //Aner ikke hvad jeg laver:
+    ACTIVATE(2, initialize_locks_and_queues);
+    ACTIVATE(3, initialize_locks_and_queues);
+
+    //Selective Repeat for everyone
     ACTIVATE(1, selective_repeat);
     ACTIVATE(2, selective_repeat);
-    //ACTIVATE(3, selective_repeat);
+    ACTIVATE(3, selective_repeat);
+    ACTIVATE(4, selective_repeat);
 
     /* simuleringen starter */
     Start();

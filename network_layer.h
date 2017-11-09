@@ -8,7 +8,7 @@
 #include "events.h"
 #include "rdt.h"
 
-#define NR_BUFS 4
+#define NR_BUFS 8
 
 /* For now only DATAGRAM is used, but for dynamic routing, ROUTERINFO is defined */
 typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */

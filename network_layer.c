@@ -20,8 +20,13 @@ FifoQueue queue_NtoT;   //Queue from Network Layer to Transport Layer
 FifoQueue queue_LtoN;   //Queue from Link Layer to Network Layer
 FifoQueue queue_NtoL;   //Queue from Network Layer to Link Layer
 
+FifoQueue from_network_layer_queue;                /* Queue for data from network layer */
+FifoQueue for_network_layer_queue;    /* Queue for data for the network layer */
+
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
+
+forwarding_table table;
 
 
 boolean network_layer_enabled[NR_BUFS];
@@ -42,6 +47,9 @@ void initialize_locks_and_queues() {
     queue_NtoT = InitializeFQ();
     queue_LtoN = InitializeFQ();
     queue_NtoL = InitializeFQ();
+
+    from_network_layer_queue = InitializeFQ();
+    for_network_layer_queue = InitializeFQ();
 
 
     write_lock = malloc(sizeof(mlock_t));
@@ -88,10 +96,8 @@ void init_forwardtable(forwarding_table *thisTable) {
 //    table->table[2] = {3, {1, 4}},
 //            table->table[3] =               {4, {2, 3}};
 
-//    thisTable->size = sizeof(thisTable->table) / sizeof(forwarding_field);
     thisTable->size = 4;
-//    printf("TABLE SIZE: %i FIELD SIZE: %i\n ", (int) sizeof(*thisTable->table), (int) sizeof(forwarding_field));
-//    printf("Size of forwarding table: %i\n", thisTable->size);
+    printf("Size of forwarding table: %i\n", thisTable->size);
 }
 
 /**
@@ -108,25 +114,17 @@ int round_robin(int connections[]) {
  * but we will need to inform the link layer where it should forward it to */
 
 int forward(int toAddress) {
-    forwarding_table table;
 
-    // Initialize forwarding table
-    init_forwardtable(&table);
-
-    int rr;
 
     // Find the station
     for (int station = 0; station < table.size; ++station) {
         if (get_ThisStation() == table.table[station].station) {
             for (int connection = 0; connection < 2; ++connection) {
                 if (table.table[station].connections[connection] == toAddress) {
-                    printf("TO STATION: %i\n", toAddress);
                     return toAddress;
                 }
             }
-            rr = round_robin(table.table[station].connections);
-            printf("TO STATION RR: %i\n", rr);
-            return rr;
+            return round_robin(table.table[station].connections);
         }
     }
 }
@@ -134,11 +132,16 @@ int forward(int toAddress) {
 
 /* Listen to relevant events for network layer, and act upon them */
 void network_layer_main_loop() {
+    //initialize_locks_and_queues();
     long int events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_NETWORK_LAYER | DATA_FROM_TRANSPORT_LAYER | DONE_SENDING;
     event_t event;
     FifoQueueEntry e;
     datagram d;
     int i, j;
+
+    //Initializing forwarding table
+    init_forwardtable(&table);
+
 
     int ThisStation;
     ThisStation = get_ThisStation();
@@ -155,6 +158,9 @@ void network_layer_main_loop() {
 
     i = 0;
     j = 0;
+
+    printf("Starter main loop for station %i\n", ThisStation);
+
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
@@ -176,8 +182,11 @@ void network_layer_main_loop() {
             case DATA_FOR_NETWORK_LAYER:
                 //printf("Data for network layer\n");
 
+                printf("DATA FOR NETWORK LAYER\n");
                 Lock(network_layer_lock);
-                for_network_layer_queue = get_for_queue();
+
+                //for_network_layer_queue = get_for_queue();
+                //from_network_layer_queue = get_from_queue();
                 from_queue = (FifoQueue) get_queue_NtoT();
 
                 packet *p2;
@@ -185,17 +194,33 @@ void network_layer_main_loop() {
                 e = DequeueFQ(for_network_layer_queue);
 
                 p2 = e->val;
+                printf("Link layer packet, fra: %i til: %i\n", p2->source, p2->dest);
 
-                //Test til at se hvor den vil forwarde hen:
-                //printf("Pakke fra: %i til: %i, skal forwardes igennem: %i\n", p2->source, p2->dest, forward(p2->dest));
+                if (p2->dest == ThisStation){
+                    //Got message to us from link layer
+                    printf("Fik besked til os fra link lag, data: %s, source: %i, dest: %i\n", p2->data, p2->source, p2->dest);
 
+                    packet *p3;
 
+                    p3 = (packet *) malloc(sizeof(packet));
 
-                EnqueueFQ(NewFQE((void *) p2), from_queue);
+                    strcpy(p3->data, p2->data);
+
+                    p3->source = p2->source;
+                    p3->dest = p2->dest;
+
+                    printf("Enqueuer ny packet til transport laget\n");
+                    EnqueueFQ(NewFQE((void *) p3), from_queue);
+                    Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
+                } else {
+                    printf("Fik besked der ikke var til os i link lag, sender videre\n");
+                    EnqueueFQ(NewFQE((void *) p2), from_network_layer_queue);
+                    signal_link_layer_if_allowed(p2->dest);
+                }
+
 
                 //printf("Signalerer transport laget\n");
 
-                Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
 
                 Unlock(network_layer_lock);
 
@@ -208,18 +233,19 @@ void network_layer_main_loop() {
                 for_queue = (FifoQueue) get_queue_TtoN();
                 from_queue = (FifoQueue) get_queue_NtoT();
 
+
                 //TODO Skal ikke være en packet, men et datagram
                 packet *p;
 
                 e = DequeueFQ(for_queue);
 
+
                 p = e->val;
 
-                //Test til at se hvor den vil forwarde hen:
-                printf("Pakke fra: %i til: %i, skal forwardes igennem: %i\n", p->source, p->dest, forward(4));
+                printf("Sender besked fra transport laget, med message %s, fra: %i, til : %i\n", p->data, p->source, p->dest);
 
 
-                EnqueueFQ(e, from_network_layer_queue);
+                EnqueueFQ(NewFQE((void *) p), from_network_layer_queue);
                 signal_link_layer_if_allowed(p->dest);
                 Unlock(network_layer_lock);
 
@@ -285,12 +311,18 @@ void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *net
     char *buffer;
     Lock(network_layer_lock);
 
-    //printf("Packet info %s\n", p->data);
+    printf("Packet info %s, source: %i, dest: %i\n",p->data, p->source, p->dest);
+    packet *p2;
 
+    p2 = (packet *) malloc(sizeof(packet));
     buffer = (char *) malloc(sizeof(char) * (1 + MAX_PKT));
     packet_to_string(p, buffer);
+    strcpy(p2->data, buffer);
+    p2->dest = p->dest;
+    p2->source = p->source;
 
-    EnqueueFQ(NewFQE((void *) buffer), for_network_layer_queue);
+    printf("Queuer ny packet til for_network_layer_queue\n");
+    EnqueueFQ(NewFQE((void *) p2), for_network_layer_queue);
 
 
     Unlock(network_layer_lock);
