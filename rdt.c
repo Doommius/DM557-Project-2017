@@ -162,7 +162,9 @@ void FakeTransportLayer1(){
     j = 0;
 
     //Signal network layer, that the packets are ready:
-    Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
+    for (int k = 0; k < 20; k++) {
+        Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
+    }
 
     while(true){
         Wait(&event, events_we_handle);
@@ -172,12 +174,15 @@ void FakeTransportLayer1(){
                 Lock(network_layer_lock);
 
 
-                printf("Fik besked i transport laget, station %i\n", ThisStation);
+                //printf("Fik besked i transport laget, station %i\n", ThisStation);
+
                 e = DequeueFQ(from_queue);
                 packet *p;
+
                 p = e->val;
-                //p = e->val;
+
                 //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
+
                 logLine(succes, "Received message: %s\n", p->data);
                 free(p);
                 j++;
@@ -187,8 +192,9 @@ void FakeTransportLayer1(){
                 break;
 
         }
-        if(j >= 10 && EmptyFQ(from_network_layer_queue) && EmptyFQ(for_network_layer_queue)){
-            printf("Sleep nr 1, er from queuen tom? %i. Er for queuen? %i\n", EmptyFQ(from_network_layer_queue), EmptyFQ(for_network_layer_queue));
+        if(j >= 10 && EmptyFQ(from_network_layer_queue)){
+            //printf("Sleep nr 1, er from queuen tom? %i. Er for queuen? %i\n", EmptyFQ(from_network_layer_queue), EmptyFQ(for_network_layer_queue));
+
             Signal(DONE_SENDING, NULL);
             sleep(5);
             Stop();
@@ -236,17 +242,23 @@ void FakeTransportLayer2(){
                 Lock(network_layer_lock);
 
 
-                printf("Fik besked i transport laget, station %i\n", ThisStation);
+                //printf("Fik besked i transport laget, station %i\n", ThisStation);
+
                 e = DequeueFQ(from_queue);
                 packet *p;
+
                 p = e->val;
-                //p = e->val;
+
                 //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
+
                 logLine(succes, "Received message: %s\n", p->data);
 
                 if (j < 10) {
                     ((char *) p->data)[0] = 'd';
-                    EnqueueFQ(NewFQE((void *) p), from_network_layer_queue);
+                    p->dest = 1;
+                    p->source = ThisStation;
+                    EnqueueFQ(NewFQE((void *) p), for_queue);
+                    Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
                 }
 
                 //free(p);
@@ -256,12 +268,10 @@ void FakeTransportLayer2(){
                 Unlock(network_layer_lock);
                 break;
         }
-        if(j >= 20 && EmptyFQ(from_network_layer_queue) && EmptyFQ(for_network_layer_queue)){
-            printf("Sleep nr 2, er from queuen tom? %i. Er for queuen? %i\n", EmptyFQ(from_network_layer_queue), EmptyFQ(for_network_layer_queue));
+        if(j >= 20 && EmptyFQ(for_network_layer_queue)){
+            //printf("Sleep nr 2, er from queuen tom? %i. Er for queuen? %i\n", EmptyFQ(from_network_layer_queue), EmptyFQ(for_network_layer_queue));
 
             Signal(DONE_SENDING, NULL);
-
-
             sleep(5);
             Stop();
         }
@@ -501,7 +511,6 @@ void selective_repeat() {
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
 
-                printf("Network layer ready\n");
 
                 r.source = ThisStation;
                 if (ThisStation == 2){
@@ -526,22 +535,11 @@ void selective_repeat() {
                         /* Frames may be accepted in any order. */
                         arrived[r.seq % NR_BUFS] = true;        /* mark buffer as full */
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
-                        printf("R Info Data: %s\n", r.info.data);
                         while (arrived[frame_expected % NR_BUFS]) {
                             /* Pass frames and advance window. */
                             to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
 
 
-                            if (EmptyFQ(for_network_layer_queue)){
-                                printf("Tom\n");
-                            }
-                            else {
-                                FifoQueueEntry e;
-                                packet *fuck_dig;
-                                e = for_network_layer_queue->first;
-                                fuck_dig = e->val;
-                                printf("Første packet: %s\n", e->val);
-                            }
 
                             no_nak = true;
                             arrived[frame_expected % NR_BUFS] = false;
@@ -719,14 +717,16 @@ int main(int argc, char *argv[]) {
 
     ACTIVATE(1, FakeTransportLayer1);
     ACTIVATE(2, FakeTransportLayer2);
+    //ACTIVATE(3, FakeTransportLayer2);
 
 
     ACTIVATE(1, FakeNetworkLayer);
     ACTIVATE(2, FakeNetworkLayer);
-
+    //ACTIVATE(3, FakeNetworkLayer);
 
     ACTIVATE(1, selective_repeat);
     ACTIVATE(2, selective_repeat);
+    //ACTIVATE(3, selective_repeat);
 
     /* simuleringen starter */
     Start();
