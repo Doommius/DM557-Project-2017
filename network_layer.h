@@ -14,7 +14,7 @@
 typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */
 
 typedef struct {                        /* datagrams are transported in this layer */
-    char data[128];   /* Data from the transport layer segment  */
+    packet *data;   /* Data from the transport layer segment  */
     datagram_kind kind;                   /* what kind of a datagram is it? */
     int from;                                                /* From station address */
     int to;                                                /* To station address */

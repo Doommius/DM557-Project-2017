@@ -143,8 +143,13 @@ void network_layer_main_loop() {
     init_forwardtable(&table);
 
 
+
     int ThisStation;
     ThisStation = get_ThisStation();
+
+    if (ThisStation != 1 && ThisStation != 4){
+        initialize_locks_and_queues();
+    }
 
     FifoQueue for_queue;
     FifoQueue from_queue;
@@ -159,7 +164,7 @@ void network_layer_main_loop() {
     i = 0;
     j = 0;
 
-    printf("Starter main loop for station %i\n", ThisStation);
+    //printf("Starter main loop for station %i\n", ThisStation);
 
     while (true) {
         Wait(&event, events_we_handle);
@@ -182,7 +187,7 @@ void network_layer_main_loop() {
             case DATA_FOR_NETWORK_LAYER:
                 //printf("Data for network layer\n");
 
-                printf("DATA FOR NETWORK LAYER\n");
+                //printf("DATA FOR NETWORK LAYER\n");
                 Lock(network_layer_lock);
 
                 //for_network_layer_queue = get_for_queue();
@@ -194,32 +199,21 @@ void network_layer_main_loop() {
                 e = DequeueFQ(for_network_layer_queue);
 
                 p2 = e->val;
-                printf("Link layer packet, fra: %i til: %i\n", p2->source, p2->dest);
 
                 if (p2->dest == ThisStation){
                     //Got message to us from link layer
                     printf("Fik besked til os fra link lag, data: %s, source: %i, dest: %i\n", p2->data, p2->source, p2->dest);
 
-                    packet *p3;
-
-                    p3 = (packet *) malloc(sizeof(packet));
-
-                    strcpy(p3->data, p2->data);
-
-                    p3->source = p2->source;
-                    p3->dest = p2->dest;
-
-                    printf("Enqueuer ny packet til transport laget\n");
-                    EnqueueFQ(NewFQE((void *) p3), from_queue);
+                    //printf("Enqueuer ny packet til transport laget\n");
+                    EnqueueFQ(NewFQE((void *) p2), from_queue);
                     Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
                 } else {
-                    printf("Fik besked der ikke var til os i link lag, sender videre\n");
+                    printf("Fik besked der ikke var til os i link lag, sender videre. Source: %i, Dest: %i, ThisStation: %i\n", p2->source, p2->dest, ThisStation);
                     EnqueueFQ(NewFQE((void *) p2), from_network_layer_queue);
                     signal_link_layer_if_allowed(p2->dest);
                 }
 
 
-                //printf("Signalerer transport laget\n");
 
 
                 Unlock(network_layer_lock);
@@ -242,6 +236,7 @@ void network_layer_main_loop() {
 
                 p = e->val;
 
+                printf("Transportlaget\n");
                 printf("Sender besked fra transport laget, med message %s, fra: %i, til : %i\n", p->data, p->source, p->dest);
 
 
@@ -249,7 +244,6 @@ void network_layer_main_loop() {
                 signal_link_layer_if_allowed(p->dest);
                 Unlock(network_layer_lock);
 
-                //printf("Gjort klar til selective repeat\n");
                 break;
 
             case DONE_SENDING:
@@ -293,7 +287,7 @@ void from_network_layer(packet *p, FifoQueue from_network_layer_queue, mlock_t *
     packet *p2;
     p2 = from_network_layer_queue->first->val;
 
-    //printf("from_network_layer, packet data: %s\n", p2->data);
+    printf("from_network_layer, packet data: %s, source: %i, dest: %i\n", p2->data, p2->source, p2->dest);
 
     e = DequeueFQ(from_network_layer_queue);
     Unlock(network_layer_lock);
@@ -311,7 +305,7 @@ void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *net
     char *buffer;
     Lock(network_layer_lock);
 
-    printf("Packet info %s, source: %i, dest: %i\n",p->data, p->source, p->dest);
+    //printf("Packet info %s, source: %i, dest: %i\n",p->data, p->source, p->dest);
     packet *p2;
 
     p2 = (packet *) malloc(sizeof(packet));
@@ -321,7 +315,7 @@ void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *net
     p2->dest = p->dest;
     p2->source = p->source;
 
-    printf("Queuer ny packet til for_network_layer_queue\n");
+    //printf("Queuer ny packet til for_network_layer_queue\n");
     EnqueueFQ(NewFQE((void *) p2), for_network_layer_queue);
 
 

@@ -87,11 +87,12 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     r->kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
         r->info = buffer[frame_nr % NR_BUFS];
+        printf("frame_nr: %i, NR_BUFS: %i, module: %i\n", frame_nr, NR_BUFS, frame_nr % NR_BUFS);
     }
 
     r->source = ThisStation;
     r->dest = forward(r->info.dest);
-    printf("Sender frame fra: %i, til %i, forwarder igennem: %i\n", r->source, r->info.dest, r->dest);
+    printf("Sender frame fra: %i, til %i, forwarder igennem: %i\n Data: %s, packet source: %i\n", r->source, r->info.dest, r->dest, r->info.data, r->info.source);
 
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
@@ -126,9 +127,6 @@ void FakeTransportLayer1(){
     packet *p;
 
 
-
-
-
     //TODO Bedre queue navne
     //TODO Maybe rename to From_network_queue
     //TODO and For_Network_queue or to_Network_queue?
@@ -159,7 +157,7 @@ void FakeTransportLayer1(){
 
     sleep(2);
 
-    printf("Signaler\n");
+    //printf("Signaler\n");
     i = 0;
     j = 0;
 
@@ -241,7 +239,7 @@ void FakeTransportLayer2(){
         switch (event.type){
             case DATA_FOR_TRANSPORT_LAYER:
                 Lock(network_layer_lock);
-                printf("I transport laget, er from_queue tom? %i\n", EmptyFQ(from_queue));
+                //printf("I transport laget, er from_queue tom? %i\n", EmptyFQ(from_queue));
 
 
                 e = DequeueFQ(from_queue);
@@ -250,7 +248,7 @@ void FakeTransportLayer2(){
 
                 p = e->val;
 
-                printf("Fik besked i transport laget, data: %s, fra: %i, til %i\n", p->data, p->source, p->dest);
+                //printf("Fik besked i transport laget, data: %s, fra: %i, til %i\n", p->data, p->source, p->dest);
 
                 //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
 
@@ -262,6 +260,7 @@ void FakeTransportLayer2(){
 
                     p->dest = 1;
 
+                    printf("Queuer packet tilbage med source: %i, dest: %i\n", p->source, p->dest);
                     EnqueueFQ(NewFQE((void *) p), for_queue);
                     Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
                 }
@@ -287,6 +286,7 @@ void FakeTransportLayer2(){
 void FakeNetworkLayer(){
     char *buffer;
     int i, j;
+    //initialize_locks_and_queues();
 
     //long int events_we_handle;
 
@@ -421,6 +421,8 @@ void FakeNetworkLayer2() {
 
                 if (j < 10) {
                     ((char *) e->val)[0] = 'd';
+
+
                     EnqueueFQ(e, from_network_layer_queue);
                 }
 
@@ -516,14 +518,6 @@ void selective_repeat() {
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
 
-                /*
-                r.source = ThisStation;
-                if (ThisStation == 4){
-                    r.dest = 1;
-                } else {
-                    r.dest = 4;
-                }
-                 */
                 send_frame(DATA, next_frame_to_send, frame_expected, out_buf, &r);        /* transmit the frame */
                 inc(next_frame_to_send);        /* advance upper window edge */
                 break;
@@ -733,8 +727,8 @@ int main(int argc, char *argv[]) {
     ACTIVATE(4, FakeNetworkLayer);
 
     //Aner ikke hvad jeg laver:
-    ACTIVATE(2, initialize_locks_and_queues);
-    ACTIVATE(3, initialize_locks_and_queues);
+    //ACTIVATE(2, initialize_locks_and_queues);
+    //ACTIVATE(3, initialize_locks_and_queues);
 
     //Selective Repeat for everyone
     ACTIVATE(1, selective_repeat);
