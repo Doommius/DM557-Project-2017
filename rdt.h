@@ -37,7 +37,7 @@ typedef unsigned int seq_nr;        /* sequence or ack numbers */
 
 typedef struct {
     char data[MAX_PKT];
-
+    int globaldest;     //GlobalDestination
     int source;
     int dest;
 } packet;        /* packet definition */
@@ -64,7 +64,7 @@ typedef struct {        /* frames are transported in this layer */
     frame_kind kind;        /* what kind of a frame is it? */
     seq_nr seq;           /* sequence number */
     seq_nr ack;           /* acknowledgement number */
-    datagram info;          /* the network layer packet */
+    packet info;          /* the network layer packet */
     int sendTime;
     int recvTime;
 

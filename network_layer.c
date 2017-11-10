@@ -26,6 +26,8 @@ FifoQueue for_network_layer_queue;    /* Queue for data for the network layer */
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
 
+mlock_t *link_layer_lock;
+
 forwarding_table table;
 
 
@@ -55,8 +57,11 @@ void initialize_locks_and_queues() {
     write_lock = malloc(sizeof(mlock_t));
     network_layer_lock = (mlock_t *) malloc(sizeof(mlock_t));
 
+    link_layer_lock = (mlock_t *) malloc(sizeof(mlock_t));
+
     Init_lock(write_lock);
     Init_lock(network_layer_lock);
+    Init_lock(link_layer_lock);
 }
 
 
@@ -136,7 +141,6 @@ void network_layer_main_loop() {
     long int events_we_handle = NETWORK_LAYER_ALLOWED_TO_SEND | DATA_FOR_NETWORK_LAYER | DATA_FROM_TRANSPORT_LAYER | DONE_SENDING;
     event_t event;
     FifoQueueEntry e;
-    datagram d;
     int i, j;
 
     //Initializing forwarding table
@@ -175,10 +179,11 @@ void network_layer_main_loop() {
             case NETWORK_LAYER_ALLOWED_TO_SEND:
                 Lock(network_layer_lock);
 
-                //printf("Network layer allowed to send\n");
+                printf("Network layer allowed to send\n");
 
                 if (network_layer_enabled[ThisStation] && !EmptyFQ(from_network_layer_queue)) {
                     // Signal element is ready
+                    printf("Sender packet\n");
                     logLine(info, "Sending signal for message #%d\n", i);
                     network_layer_enabled[ThisStation] = false;
                     Signal(NETWORK_LAYER_READY, NULL);
@@ -193,21 +198,17 @@ void network_layer_main_loop() {
                 printf("DATA FOR NETWORK LAYER\n");
                 Lock(network_layer_lock);
 
-                //for_network_layer_queue = get_for_queue();
-                //from_network_layer_queue = get_from_queue();
-                //from_queue = (FifoQueue) get_queue_NtoT();
-
                 packet *p2;
-                datagram *d2;
 
                 e = DequeueFQ(for_network_layer_queue);
 
-                d2 = e->val;
+                p2 = (packet *) malloc(sizeof(packet));
 
-                p2 = d2->data;
-                printf("p2 source: %i, dest: %i, current station: %i\n", p2->source, p2->dest, ThisStation);
+                memcpy(p2, (char *) ValueOfFQE(e), sizeof(packet));
+                free((void *) ValueOfFQE(e));
+                DeleteFQE(e);
 
-                if (p2->dest == ThisStation){
+                if (p2->globaldest == ThisStation){
                     //Got message to us from link layer
                     printf("Fik besked til os fra link lag, data: %s, source: %i, dest: %i\n", p2->data, p2->source, p2->dest);
 
@@ -215,11 +216,12 @@ void network_layer_main_loop() {
                     EnqueueFQ(NewFQE((void *) p2), from_queue);
                     Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
                 } else {
-                    d2->to = forward(p2->dest);
-                    d2->from = ThisStation;
-                    printf("Fik besked der ikke var til os i link lag, sender videre. Source: %i, Dest: %i\n", d2->from, d2->to);
-                    EnqueueFQ(NewFQE((void *) d2), from_network_layer_queue);
-                    signal_link_layer_if_allowed(d2->to);
+                    printf("Fik besked der ikke var til os i link lag, sender videre. Source: %i, Dest: %i, GlobalDest: %i, Data: %s\n", p2->source, p2->dest, p2->globaldest, p2->data);
+                    p2->source = ThisStation;
+                    p2->dest = forward(p2->globaldest);
+                    printf("Sender besked videre. Source: %i, Dest: %i\n", p2->source, p2->dest);
+                    EnqueueFQ(NewFQE((void *) p2), from_network_layer_queue);
+                    signal_link_layer_if_allowed(p2->dest);
                 }
 
                 Unlock(network_layer_lock);
@@ -236,21 +238,36 @@ void network_layer_main_loop() {
 
                 //TODO Skal ikke være en packet, men et datagram
                 packet *p;
-                datagram *d;
                 e = DequeueFQ(for_queue);
 
-                d = (datagram *) malloc(sizeof(datagram));
-
-                p = e->val;
-                d->data = p;
-                d->from = ThisStation;
-                d->to = forward(p->dest);
-
-                printf("Sender besked fra transport laget, fra: %i, til: %i\n", d->from, d->to);
+                p = (packet *) malloc(sizeof(packet));
 
 
-                EnqueueFQ(NewFQE((void *) d), from_network_layer_queue);
-                signal_link_layer_if_allowed(d->to);
+                memcpy(p, (char *) ValueOfFQE(e), sizeof(packet));
+                free((void *) ValueOfFQE(e));
+                DeleteFQE(e);
+
+
+                p->dest = forward(p->globaldest);
+
+                /*
+                //printf("memcpy packet: source: %i, dest: %i, data: %s\n", p->source, p->dest, p->data);
+                packet *p3;
+                p3 = (packet *) malloc(sizeof(packet));
+
+                p3->source = ThisStation;
+                p3->dest = forward(p->dest);
+                strcpy(p3->data, (char *) p);
+
+
+                //printf("Sender besked fra transport laget, fra: %i, til: %i, forwarded igennem: %i, med data: %s\n", p->source, p->dest, p3->dest, p->data);
+
+                 */
+
+                printf("Sender besked til link laget, med source: %i, dest: %i, globaldest: %i, data: %s\n", p->source, p->dest, p->globaldest, p->data);
+
+                EnqueueFQ(NewFQE((void *) p), from_network_layer_queue);
+                signal_link_layer_if_allowed(p->dest);
                 Unlock(network_layer_lock);
 
                 break;
@@ -278,7 +295,10 @@ void signal_link_layer_if_allowed(int address) {
 
     //printf("Network layer enabled for address? %i. Network layer enabled for ThisStation? %i\n", network_layer_enabled[address], network_layer_enabled[ThisStation]);
 
-    if (!EmptyFQ(queue) && network_layer_enabled[ThisStation]) {
+    //if (!EmptyFQ(queue)) {
+    if( !EmptyFQ(queue) && network_layer_enabled[ThisStation]){
+        printf("link layer signalled\n");
+        //enable_network_layer(address, network_layer_enabled, link_layer_lock);
         Signal(NETWORK_LAYER_ALLOWED_TO_SEND, NULL);
     }
 }
@@ -289,7 +309,7 @@ void packet_to_string(packet *data, char *buffer) {
     buffer[MAX_PKT] = '\0';
 }
 
-void from_network_layer(datagram *d, FifoQueue from_network_layer_queue, mlock_t *network_layer_lock) {
+void from_network_layer(packet *p, FifoQueue from_network_layer_queue, mlock_t *network_layer_lock) {
     FifoQueueEntry e;
 
     Lock(network_layer_lock);
@@ -299,29 +319,27 @@ void from_network_layer(datagram *d, FifoQueue from_network_layer_queue, mlock_t
     if (!e) {
         logLine(error, "ERROR: We did not receive anything from the queue, like we should have\n");
     } else {
-        memcpy(d, (char *) ValueOfFQE(e), sizeof(datagram));
+        memcpy(p, (char *) ValueOfFQE(e), sizeof(packet));
+
+
         free((void *) ValueOfFQE(e));
         DeleteFQE(e);
     }
 }
 
-void to_network_layer(datagram *d, FifoQueue for_network_layer_queue, mlock_t *network_layer_lock) {
+void to_network_layer(packet *p, FifoQueue for_network_layer_queue, mlock_t *network_layer_lock) {
     char *buffer;
     Lock(network_layer_lock);
 
-    //printf("Packet info %s, source: %i, dest: %i\n",p->data, p->source, p->dest);
-    datagram *d2;
-
-    d2 = (datagram *) malloc(sizeof(datagram));
-
-    d2->data = d->data;
-    d2->from = d->from;
-    d2->to = d->to;
-    d2->kind = d->kind;
-
+    packet *p2;
+    p2 = (packet *) malloc(sizeof(packet));
+    p2->dest = p->dest;
+    p2->source = p->source;
+    p2->globaldest = p->globaldest;
+    strcpy(p2->data, p->data);
 
     //printf("Queuer ny packet til for_network_layer_queue\n");
-    EnqueueFQ(NewFQE((void *) d2), for_network_layer_queue);
+    EnqueueFQ(NewFQE((void *) p2), for_network_layer_queue);
 
     Unlock(network_layer_lock);
 

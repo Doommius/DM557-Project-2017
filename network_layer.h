@@ -8,7 +8,7 @@
 #include "events.h"
 #include "rdt.h"
 
-#define NR_BUFS 8
+#define NR_BUFS 5
 
 
 typedef struct {
@@ -37,10 +37,10 @@ void network_layer_main_loop();
 void signal_link_layer_if_allowed( int address);
 
 /* Fetch a packet from the network layer for transmission on the channel. */
-void from_network_layer(datagram *d,  FifoQueue from_network_layer_queue, mlock_t *network_layer_lock);
+void from_network_layer(packet *p,  FifoQueue from_network_layer_queue, mlock_t *network_layer_lock);
 
 /* Deliver information from an inbound frame to the network layer. */
-void to_network_layer(datagram *d,  FifoQueue for_network_layer_queue, mlock_t *network_layer_lock);
+void to_network_layer(packet *p,  FifoQueue for_network_layer_queue, mlock_t *network_layer_lock);
 
 /* Allow the network layer to cause a network_layer_ready event. */
 void enable_network_layer(int station, boolean network_layer_allowance_list[], mlock_t *network_layer_lock);

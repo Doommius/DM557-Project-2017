@@ -20,7 +20,7 @@
 #define ACTIVATE(n, f) Activate(n, f, #f)
 
 #define MAX_SEQ 127        /* should be 2^n - 1 */
-#define NR_BUFS 8
+#define NR_BUFS 5
 
 /* Globale variable */
 
@@ -81,7 +81,7 @@ static boolean between(seq_nr a, seq_nr b, seq_nr c) {
     return x || y || z;
 }
 
-static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, datagram buffer[], frame* r) {
+static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, packet buffer[], frame* r) {
     /* Construct and send a data, ack, or nak frame. */
 
     r->kind = fk;        /* kind == data, ack, or nak */
@@ -91,8 +91,9 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
     }
 
     r->source = ThisStation;
-    r->dest = r->info.to;
-    printf("Sender frame fra: %i, til %i\n Packet source: %i\n", r->source, r->dest, r->info.from);
+    r->dest = r->info.dest;
+
+    printf("Sender frame fra: %i, til %i\n Packet source: %i, Globaldestination: %i, data: %s\n", r->source, r->dest, r->info.source, r->info.globaldest, r->info.data);
 
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
@@ -147,6 +148,7 @@ void FakeTransportLayer1(){
         p->source = ThisStation;
 
         p->dest = 4;
+        p->globaldest = 4;
 
         EnqueueFQ(NewFQE((void *) p), for_queue);
 
@@ -235,14 +237,18 @@ void FakeTransportLayer2(){
         switch (event.type){
             case DATA_FOR_TRANSPORT_LAYER:
                 Lock(network_layer_lock);
-                //printf("I transport laget, er from_queue tom? %i\n", EmptyFQ(from_queue));
+                printf("I transport laget, er from_queue tom? %i\n", EmptyFQ(from_queue));
 
 
+                printf("Fik besked til transportlag 2\n");
                 e = DequeueFQ(from_queue);
 
                 packet *p;
+                p = (packet *) malloc(sizeof(packet));
 
-                p = e->val;
+                memcpy(p, (char *) ValueOfFQE(e), sizeof(packet));
+                free((void *) ValueOfFQE(e));
+                DeleteFQE(e);
 
                 //printf("Fik besked i transport laget, data: %s, fra: %i, til %i\n", p->data, p->source, p->dest);
 
@@ -255,6 +261,7 @@ void FakeTransportLayer2(){
                     p->source = ThisStation;
 
                     p->dest = 1;
+                    p->globaldest = 1;
 
                     printf("Queuer packet tilbage med source: %i, dest: %i\n", p->source, p->dest);
                     EnqueueFQ(NewFQE((void *) p), for_queue);
@@ -452,8 +459,8 @@ void selective_repeat() {
     seq_nr too_far;                   /* upper edge of receiver's window + 1 */
     int i;                            /* index into buffer pool */
     frame r;                          /* scratch variable */
-    datagram out_buf[NR_BUFS];          /* buffers for the outbound stream */
-    datagram in_buf[NR_BUFS];           /* buffers for the inbound stream */
+    packet out_buf[NR_BUFS];          /* buffers for the outbound stream */
+    packet in_buf[NR_BUFS];           /* buffers for the inbound stream */
     boolean arrived[NR_BUFS];         /* inbound bit map */
     seq_nr nbuffered;                 /* how many output buffers currently used */
     event_t event;
@@ -520,6 +527,7 @@ void selective_repeat() {
 
             case frame_arrival:        /* a data or control frame has arrived */
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
+                printf("Got frame from: %i, to: %i, globaldest: %i\n", r.source, r.dest, r.info.globaldest);
                 if (r.kind == DATA) {
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak) {
@@ -533,8 +541,8 @@ void selective_repeat() {
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
                         while (arrived[frame_expected % NR_BUFS]) {
                             /* Pass frames and advance window. */
-                            to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
 
+                            to_network_layer(&in_buf[frame_expected % NR_BUFS], for_network_layer_queue, network_layer_lock);
 
 
                             no_nak = true;
