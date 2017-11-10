@@ -16,8 +16,6 @@
 
 FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
 FifoQueue queue_NtoT;   //Queue from Network Layer to Transport Layer
-FifoQueue queue_LtoN;   //Queue from Link Layer to Network Layer
-FifoQueue queue_NtoL;   //Queue from Network Layer to Link Layer
 
 FifoQueue from_network_layer_queue;                /* Queue for data from network layer */
 FifoQueue for_network_layer_queue;    /* Queue for data for the network layer */
@@ -46,8 +44,6 @@ void initialize_locks_and_queues() {
 
     queue_TtoN = InitializeFQ();
     queue_NtoT = InitializeFQ();
-    queue_LtoN = InitializeFQ();
-    queue_NtoL = InitializeFQ();
 
     from_network_layer_queue = InitializeFQ();
     for_network_layer_queue = InitializeFQ();
