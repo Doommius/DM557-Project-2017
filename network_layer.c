@@ -203,28 +203,40 @@ void network_layer_main_loop() {
                 //from_network_layer_queue = get_from_queue();
                 //from_queue = (FifoQueue) get_queue_NtoT();
 
-                packet *p2;
                 datagram *d2;
+                d2 = (datagram *) malloc(sizeof(datagram));
 
                 e = DequeueFQ(for_network_layer_queue);
                 printf("Fik dequeuet\n");
+/*
+                memcpy(d2, (char *) ValueOfFQE(e), sizeof(datagram));
+                DeleteFQE(e);
+*/
+                d2 = (datagram *) e->val;
 
-                d2 = e->val;
+
 
                 printf("Fik datagram\n");
-                p2 = d2->data;
-                printf("p2 source: %i, dest: %i, current station: %i\n", p2->source, p2->dest, ThisStation);
 
-                if (p2->dest == ThisStation){
+                printf("d2 source: %i, dest: %i, current station: %i, messsage: %s, globaldest: %i\n", d2->from, d2->to, ThisStation, d2->msg, d2->globaldest);
+
+                if (d2->globaldest == ThisStation ){
                     //Got message to us from link layer
-                    printf("Fik besked til os fra link lag, data: %s, source: %i, dest: %i\n", p2->data, p2->source, p2->dest);
+                    printf("Fik besked til os fra link lag, data: %s, source: %i, dest: %i\n", d2->msg, d2->from, d2->to);
 
                     //disable_network_layer(ThisStation, network_layer_enabled, link_layer_lock);
                     //printf("Enqueuer ny packet til transport laget\n");
+
+                    packet *p2;
+                    p2 = (packet *) malloc(sizeof(packet));
+                    strcpy(p2->data, d2->msg);
+                    p2->source = d2->from;
+                    p2->dest = d2->globaldest;
+
                     EnqueueFQ(NewFQE((void *) p2), from_queue);
                     Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
                 } else {
-                    d2->to = forward(p2->dest);
+                    d2->to = forward(d2->globaldest);
                     d2->from = ThisStation;
                     printf("Fik besked der ikke var til os i link lag, sender videre. Source: %i, Dest: %i\n", d2->from, d2->to);
                     EnqueueFQ(NewFQE((void *) d2), from_network_layer_queue);
@@ -251,10 +263,12 @@ void network_layer_main_loop() {
 
                 d->data = e->val;
                 d->from = ThisStation;
+                d->globaldest = d->data->dest;
+                strcpy(d->msg, d->data->data);
                 d->to = forward(d->data->dest);
 
-                printf("Sender besked fra transportlaget, fra: %i, til: %i, data: %s\n", d->from, d->to,
-                       (char *) d->data->data);
+                printf("Sender besked fra transportlaget, fra: %i, til: %i, data: %s, global dest: %i\n", d->from, d->to,
+                       (char *) d->msg, d->globaldest);
 
                 //printf("Størrelse af datagram: %i\n", sizeof(datagram));
 
@@ -344,7 +358,9 @@ void to_network_layer(datagram *d, FifoQueue for_network_layer_queue, mlock_t *n
     d2->from = d->from;
     d2->to = d->to;
     d2->kind = d->kind;
-    printf("to_network_layer, source: %i, dest: %i, data: %s\n", d2->from, d2->to, d2->data->data);
+    d2->globaldest = d->globaldest;
+    strcpy(d2->msg, d->msg);
+    printf("to_network_layer, source: %i, dest: %i, data: %s\n", d2->from, d2->to, d2->msg);
 
 
     //printf("Queuer ny packet til for_network_layer_queue\n");

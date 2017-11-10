@@ -60,19 +60,13 @@ int FromSubnet(int *source, int *dest, char *buffer, int *length)
       /* Henter data */
       *source = inbuf->station;
       *dest   = ThisStation;
-
-        printf("FromSubnet: DATA: %s\n", inbuf->data);
-        printf("1. before memcopy\n");
       memcopy(buffer, (char *)inbuf->data, inbuf->size);
-        printf("1. after memcopy\n");
       *length = inbuf->size;
 
       /* Data kopieres til log-bufferen */
       sprintf(msg, "(%d) queued. FromSubnet: ", GC.InData.size );
       msglen = strlen(msg);
-        printf("2. before memcopy\n");
       memcopy( (char *)msg + msglen, (char *)inbuf->data,  inbuf->size );
-        printf("2. after memcopy\n");
       msg[msglen + inbuf->size] = 10; /* linieskift                */
       LOGINFO( msg , (msglen + inbuf->size + 1));
 

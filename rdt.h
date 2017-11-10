@@ -53,6 +53,8 @@ typedef struct {                        /* datagrams are transported in this lay
     datagram_kind kind;                   /* what kind of a datagram is it? */
     int from;                                                /* From station address */
     int to;                                                /* To station address */
+    int globaldest;
+    char msg[MAX_PKT];
 } datagram;
 
 typedef enum {

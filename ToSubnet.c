@@ -17,11 +17,13 @@ static char rcsid[] = "$Id: ToSubnet.c,v 1.8 1999/09/04 11:31:01 dim Exp $";
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "subnet.macro"
 #include "subnet.h"
 #include "subnet.type"
 #include "subnet_internal.h"
+#include "rdt.h"
 
 
 extern GlobalControlStruct GC;           /* samlet kontrolstruktur */
@@ -59,12 +61,9 @@ int ToSubnet(int source, int dest, char *buffer, int length)
   outbuf.size    = ( length < BUFFERSIZE ? length : BUFFERSIZE );
 
   /* kopiering af data til bufferen */
-    printf("1: TO SUBNET DATA: %s\n", buffer);
   memcopy( (char *)outbuf.data, buffer, outbuf.size );
 
-    printf("2: TO SUBNET DATA: %s\n", outbuf.data);
-
-  /* Hvis stationen er meldt aktiv, så sendes der til den */
+    /* Hvis stationen er meldt aktiv, så sendes der til den */
   if ( GC.active[dest] ) 
     {
       /* Der checkes om det er lovligt (sekvensnummer) at sende til stationen */

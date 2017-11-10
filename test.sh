@@ -3,4 +3,4 @@ pkill mynetwork
 pkill network
 make clean
 make all
-./network -pmynetwork -n4 -e0
+./network -pmynetwork -n4 -e100

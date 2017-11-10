@@ -20,7 +20,7 @@
 #define ACTIVATE(n, f) Activate(n, f, #f)
 
 #define MAX_SEQ 127        /* should be 2^n - 1 */
-#define NR_BUFS 8
+#define NR_BUFS 16
 
 /* Globale variable */
 
@@ -83,29 +83,32 @@ static boolean between(seq_nr a, seq_nr b, seq_nr c) {
 
 static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, datagram buffer[], frame* r) {
     /* Construct and send a data, ack, or nak frame. */
+    frame *s;
+    s = (frame *) malloc(sizeof(frame));
 
-    r->kind = fk;        /* kind == data, ack, or nak */
+    s->kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
-        r->info = buffer[frame_nr % NR_BUFS];
-
+        s->info = buffer[frame_nr % NR_BUFS];
+        printf("Sender DATA\n");
         //printf("frame_nr: %i, NR_BUFS: %i, module: %i\n", frame_nr, NR_BUFS, frame_nr % NR_BUFS);
     }
 
-    r->source = ThisStation;
-    r->dest = r->info.to;
+    printf("Sender frame med source: %i, dest: %i, msg: %s, gd: %i\n", buffer[frame_nr % NR_BUFS].from, buffer[frame_nr % NR_BUFS].to, buffer[frame_nr % NR_BUFS].msg, buffer[frame_nr % NR_BUFS].globaldest);
+    s->source = ThisStation;
+    s->dest = s->info.to;
 
-    printf("2: Sender frame fra: %i, til %i\n Data: %s, Packet source: %i\n", r->source, r->dest, r->info.data->data, r->info.from);
+    printf("2: Sender frame fra: %i, til %i\n Data: %s\n", s->source, s->dest, s->info.msg);
 
-    r->seq = frame_nr;        /* only meaningful for data frames */
-    r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
+    s->seq = frame_nr;        /* only meaningful for data frames */
+    s->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
     if (fk == NAK) {
         no_nak = false;        /* one nak per frame, please */
     }
 
-    to_physical_layer(r);
+    to_physical_layer(s);
 
     if (fk == DATA) {
-        start_timer(frame_nr, r->dest);
+        start_timer(frame_nr, s->dest);
     }
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
@@ -181,13 +184,13 @@ void FakeTransportLayer1(){
                 //printf("Fik besked i transport laget, station %i\n", ThisStation);
 
                 e = DequeueFQ(from_queue);
-                packet *p;
+                packet *p2;
 
-                p = e->val;
+                p2 = e->val;
 
                 //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
 
-                logLine(succes, "Received message: %s\n", p->data);
+                logLine(succes, "Received message: %s\n", p2->data);
                 //free(p);
                 j++;
                 Unlock(network_layer_lock);
@@ -538,7 +541,7 @@ void selective_repeat() {
                         /* Frames may be accepted in any order. */
 
                         printf("frame_arrival\n");
-                        printf(", data: %s\n", r.info.data->data);
+                        printf("From: %i, to: %i, msg: %s, gd: %i\n", r.info.from, r.info.to, r.info.msg, r.info.globaldest);
                         arrived[r.seq % NR_BUFS] = true;        /* mark buffer as full */
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
                         while (arrived[frame_expected % NR_BUFS]) {
@@ -556,6 +559,7 @@ void selective_repeat() {
                     }
                 }
                 if ((r.kind == NAK) && between(ack_expected, (r.ack + 1) % (MAX_SEQ + 1), next_frame_to_send)) {
+                    printf("Det andet hallojsa\n");
                     send_frame(DATA, (r.ack + 1) % (MAX_SEQ + 1), frame_expected, out_buf, &r);
                 }
 
@@ -609,7 +613,6 @@ void print_frame(frame *s, char *direction) {
             logLine(info, "%s: NAK frame. Nak seq_nr=%d\n", direction, s->ack);
             break;
         case DATA:
-            //packet_to_string(&(s->info), temp);
             datagram_to_string(&(s->info), temp);
             logLine(info, "%s: DATA frame [seq=%d, ack=%d, kind=%d, (%s)] \n", direction, s->seq, s->ack, s->kind, temp);
             break;
@@ -622,10 +625,10 @@ int from_physical_layer(frame *r) {
     r->ack = 0;
 
     int source, dest, length;
-    printf("Receiving from subnet in station %d\n", ThisStation);
+    //printf("Receiving from subnet in station %d\n", ThisStation);
     logLine(trace, "Receiving from subnet in station %d\n", ThisStation);
     //printf("Før FromSubnet\n");
-    printf("Frame char: %c\n", (char) r);
+    //printf("Frame char: %c\n", (char) r);
     FromSubnet(&source, &dest, (char *) r, &length);
     //printf("Efter FromSubnet\n");
     //print_frame(r, "received");
@@ -633,23 +636,32 @@ int from_physical_layer(frame *r) {
     r->source = source;
     r->dest = dest;
 
-    printf("frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data);
+   // printf("FROM PHYSICAL LAYER frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data->data);
+
+    //printf("FROM PHYSICAL LAYER datagram source: %i, dest: %i, info: %s\n", r->info.from, r->info.to, r->info.data->data);
+
+    //printf("FROM PHYSICAL LAYER packet source: %i, dest: %i, info: %s\n", r->info.data->source, r->info.data->dest, r->info.data->data);
     return 0;
 }
 
 
 void to_physical_layer(frame *r) {
-    printf("3: frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data);
+    printf("3: frame source: %i, dest: %i, info: %s, kind %s\n", r->source, r->dest, r->info.msg);
 
     int result;
-    printf("FRAME: %s\n", r->info);
+    //printf("FRAME: %s\n", r->info.data->data);
+
     if (ThisStation == r->dest) {
-        result = ToSubnet(ThisStation, r->source, (char *) r->info.data, sizeof(frame));
+        //Changed r->info.data to r
+        printf("Option 1\n");
+        result = ToSubnet(ThisStation, r->source, (char *) r, sizeof(frame));
     } else {
-        result = ToSubnet(ThisStation, r->dest, (char *) r->info.data, sizeof(frame));
+        //Changed r->info.data to r
+        printf("Option 2\n");
+        result = ToSubnet(ThisStation, r->dest, (char *) r, sizeof(frame));
     }
 
-    printf("Frame %s was sent successfully: %i\n",r->info.data->data, result);
+    //printf("Frame %s was sent successfully: %i\n",r->info.data->data, result);
     print_frame(r, "sending");
 }
 
