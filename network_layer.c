@@ -208,10 +208,7 @@ void network_layer_main_loop() {
 
                 Lock(network_layer_lock);
                 for_queue = (FifoQueue) get_queue_TtoN();
-                from_queue = (FifoQueue) get_queue_NtoT();
 
-
-                //TODO Skal ikke være en packet, men et datagram
                 datagram *d;
                 e = DequeueFQ(for_queue);
 
@@ -281,9 +278,6 @@ void from_network_layer(datagram *d, FifoQueue from_network_layer_queue, mlock_t
         memcpy(d, (char *) ValueOfFQE(e), sizeof(datagram));
         free( (void *)ValueOfFQE(e));
         DeleteFQE(e);
-
-
-
     }
 }
 
