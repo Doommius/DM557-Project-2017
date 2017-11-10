@@ -81,7 +81,7 @@ static boolean between(seq_nr a, seq_nr b, seq_nr c) {
     return x || y || z;
 }
 
-static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, packet buffer[], frame* r) {
+static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, datagram buffer[], frame* r) {
     /* Construct and send a data, ack, or nak frame. */
 
     r->kind = fk;        /* kind == data, ack, or nak */
@@ -91,8 +91,8 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, pa
     }
 
     r->source = ThisStation;
-    r->dest = forward(r->info.dest);
-    printf("Sender frame fra: %i, til %i, forwarder igennem: %i\n Data: %s, packet source: %i\n", r->source, r->info.dest, r->dest, r->info.data, r->info.source);
+    r->dest = r->info.to;
+    printf("Sender frame fra: %i, til %i\n Packet source: %i\n", r->source, r->dest, r->info.from);
 
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
@@ -211,10 +211,6 @@ void FakeTransportLayer2(){
     event_t event;
     long int events_we_handle;
     FifoQueueEntry e;
-
-
-    from_network_layer_queue = InitializeFQ();
-    for_network_layer_queue = InitializeFQ();
 
     //TODO Bedre queue navne
     //TODO Maybe rename to From_network_queue
@@ -456,8 +452,8 @@ void selective_repeat() {
     seq_nr too_far;                   /* upper edge of receiver's window + 1 */
     int i;                            /* index into buffer pool */
     frame r;                          /* scratch variable */
-    packet out_buf[NR_BUFS];          /* buffers for the outbound stream */
-    packet in_buf[NR_BUFS];           /* buffers for the inbound stream */
+    datagram out_buf[NR_BUFS];          /* buffers for the outbound stream */
+    datagram in_buf[NR_BUFS];           /* buffers for the inbound stream */
     boolean arrived[NR_BUFS];         /* inbound bit map */
     seq_nr nbuffered;                 /* how many output buffers currently used */
     event_t event;

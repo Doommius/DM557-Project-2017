@@ -7,6 +7,7 @@
 
 #include "fifoqueue.h"
 
+
 #ifndef RDT_H_
 #define RDT_H_
 
@@ -33,6 +34,7 @@ typedef enum {
 
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
 
+
 typedef struct {
     char data[MAX_PKT];
 
@@ -41,12 +43,17 @@ typedef struct {
 } packet;        /* packet definition */
 
 
-typedef struct{
-    char data;
-    int source;
-    int dest;
-} segment;      /* Segment definition */
 
+/* For now only DATAGRAM is used, but for dynamic routing, ROUTERINFO is defined */
+typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */
+
+
+typedef struct {                        /* datagrams are transported in this layer */
+    packet *data;   /* Data from the transport layer segment  */
+    datagram_kind kind;                   /* what kind of a datagram is it? */
+    int from;                                                /* From station address */
+    int to;                                                /* To station address */
+} datagram;
 
 typedef enum {
     DATA, ACK, NAK
@@ -57,7 +64,7 @@ typedef struct {        /* frames are transported in this layer */
     frame_kind kind;        /* what kind of a frame is it? */
     seq_nr seq;           /* sequence number */
     seq_nr ack;           /* acknowledgement number */
-    packet info;          /* the network layer packet */
+    datagram info;          /* the network layer packet */
     int sendTime;
     int recvTime;
 
