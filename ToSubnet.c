@@ -17,13 +17,11 @@ static char rcsid[] = "$Id: ToSubnet.c,v 1.8 1999/09/04 11:31:01 dim Exp $";
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <stdlib.h>
 
 #include "subnet.macro"
 #include "subnet.h"
 #include "subnet.type"
 #include "subnet_internal.h"
-#include "rdt.h"
 
 
 extern GlobalControlStruct GC;           /* samlet kontrolstruktur */

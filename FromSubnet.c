@@ -18,7 +18,6 @@ static char rcsid[] = "$Id: FromSubnet.c,v 1.5 1999/08/18 12:25:11 dim Exp $";
 #include "subnet.h"
 #include "subnet.type"
 #include "subnet_internal.h"
-#include "rdt.h"
 
 extern GlobalControlStruct GC;           /* Samlet kontrolstruktur */
 extern StateControlStruct  SC;           /* Systemets tilstand */

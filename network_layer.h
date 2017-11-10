@@ -8,7 +8,7 @@
 #include "events.h"
 #include "rdt.h"
 
-#define NR_BUFS 16
+#define NR_BUFS 8
 
 
 typedef struct {
@@ -55,5 +55,17 @@ void datagram_to_string(datagram *d, char *buffer);
 FifoQueue *get_queue_NtoT();
 
 FifoQueue *get_queue_TtoN();
+
+boolean *get_network_layer_enabled();
+
+void FakeNetworkLayer1();
+
+void FakeNetworkLayer2();
+
+void FakeNetworkLayer();
+
+void init_forwardtable(forwarding_table *Table);
+
+int round_robin(int *connections);
 
 #endif //NETWORK_LAYER_H
