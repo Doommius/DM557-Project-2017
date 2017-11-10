@@ -87,12 +87,14 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
     r->kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
         r->info = buffer[frame_nr % NR_BUFS];
-        printf("frame_nr: %i, NR_BUFS: %i, module: %i\n", frame_nr, NR_BUFS, frame_nr % NR_BUFS);
+
+        //printf("frame_nr: %i, NR_BUFS: %i, module: %i\n", frame_nr, NR_BUFS, frame_nr % NR_BUFS);
     }
 
     r->source = ThisStation;
     r->dest = r->info.to;
-    printf("Sender frame fra: %i, til %i\n Packet source: %i\n", r->source, r->dest, r->info.from);
+
+    //printf("2: Sender frame fra: %i, til %i\n Data: %s, Packet source: %i\n", r->source, r->dest, r->info.data->data, r->info.from);
 
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
@@ -163,7 +165,9 @@ void FakeTransportLayer1(){
 
     //Signal network layer, that the packets are ready:
     for (int k = 0; k < 20; k++) {
+        Lock(network_layer_lock);
         Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
+        Unlock(network_layer_lock);
     }
 
     while(true){
@@ -184,7 +188,7 @@ void FakeTransportLayer1(){
                 //printf("Fik packet med data: %s, source: %i, dest: %i\n", p->data, p->source, p->dest);
 
                 logLine(succes, "Received message: %s\n", p->data);
-                free(p);
+                //free(p);
                 j++;
                 Unlock(network_layer_lock);
                 break;
@@ -511,6 +515,7 @@ void selective_repeat() {
         switch (event.type) {
             case NETWORK_LAYER_READY:        /* accept, save, and transmit a new frame */
                 logLine(trace, "Network layer delivers frame - lets send it\n");
+                printf("NETWORK LAYER READY\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
 
@@ -519,7 +524,9 @@ void selective_repeat() {
                 break;
 
             case frame_arrival:        /* a data or control frame has arrived */
+                printf("1. frame_arrival\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
+                printf("2. frame_arrival\n");
                 if (r.kind == DATA) {
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak) {
@@ -529,6 +536,9 @@ void selective_repeat() {
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
                         /* Frames may be accepted in any order. */
+
+                        printf("frame_arrival\n");
+                        printf(", data: %s\n", r.info.data->data);
                         arrived[r.seq % NR_BUFS] = true;        /* mark buffer as full */
                         in_buf[r.seq % NR_BUFS] = r.info;        /* insert data into buffer */
                         while (arrived[frame_expected % NR_BUFS]) {
@@ -599,7 +609,8 @@ void print_frame(frame *s, char *direction) {
             logLine(info, "%s: NAK frame. Nak seq_nr=%d\n", direction, s->ack);
             break;
         case DATA:
-            packet_to_string(&(s->info), temp);
+            //packet_to_string(&(s->info), temp);
+            datagram_to_string(&(s->info), temp);
             logLine(info, "%s: DATA frame [seq=%d, ack=%d, kind=%d, (%s)] \n", direction, s->seq, s->ack, s->kind, temp);
             break;
     }
@@ -613,12 +624,15 @@ int from_physical_layer(frame *r) {
     int source, dest, length;
 
     logLine(trace, "Receiving from subnet in station %d\n", ThisStation);
+    //printf("Før FromSubnet\n");
     FromSubnet(&source, &dest, (char *) r, &length);
-    print_frame(r, "received");
+    //printf("Efter FromSubnet\n");
+    //print_frame(r, "received");
 
     r->source = source;
     r->dest = dest;
 
+    printf("frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data->data);
     return 0;
 }
 

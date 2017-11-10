@@ -18,6 +18,7 @@ static char rcsid[] = "$Id: FromSubnet.c,v 1.5 1999/08/18 12:25:11 dim Exp $";
 #include "subnet.h"
 #include "subnet.type"
 #include "subnet_internal.h"
+#include "rdt.h"
 
 extern GlobalControlStruct GC;           /* Samlet kontrolstruktur */
 extern StateControlStruct  SC;           /* Systemets tilstand */
@@ -53,13 +54,44 @@ int FromSubnet(int *source, int *dest, char *buffer, int *length)
       UNLOCK( &GC.InData.lock, FromSubnet );  /* lås den kritiske region op */
 
       /* Der 'castes' til en pointer til hukommelses elememtets data */ 
-      inbuf = (BufStr)ValueOfFQE( e ); 
+      inbuf = (BufStr)ValueOfFQE( e );
+
+      //Dette er en test;
+/*
+      char *test;
+
+      *source = inbuf->station;
+      *dest   = ThisStation;
+        printf("Start memcopy\n");
+      memcopy(test, (char *)inbuf->data, inbuf->size);
+        printf("slutter memcopy\n");
+      *length = inbuf->size;
+      frame *r;
+      r = (frame *) test;
+      printf("Printer\n");
+      printf("Subnet frame BEFORE DELETE: Source: %i, Dest: %i, Info %s\n", r->source, r->dest, r->info.data->data);
+*/
+
+
+
+
       DeleteFQE( e );
+
+
+      //printf("Subnet frame AFTER DELETE: Source: %i, Dest: %i, Info %s\n", r->source, r->dest, r->info.data->data);
 
       /* Henter data */
       *source = inbuf->station;
       *dest   = ThisStation;
+      printf("Start memcopy\n");
       memcopy(buffer, (char *)inbuf->data, inbuf->size);
+
+      frame *r;
+      r = (frame *) buffer;
+      printf("Subnet frame AFTER DELETE: Source: %i, Dest: %i, Info %s\n", r->source, r->dest, r->info.data->data);
+
+
+      printf("slutter memcopy\n");
       *length = inbuf->size;
 
       /* Data kopieres til log-bufferen */
