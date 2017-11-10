@@ -94,7 +94,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
     r->source = ThisStation;
     r->dest = r->info.to;
 
-    //printf("2: Sender frame fra: %i, til %i\n Data: %s, Packet source: %i\n", r->source, r->dest, r->info.data->data, r->info.from);
+    printf("2: Sender frame fra: %i, til %i\n Data: %s, Packet source: %i\n", r->source, r->dest, r->info.data->data, r->info.from);
 
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
@@ -622,9 +622,10 @@ int from_physical_layer(frame *r) {
     r->ack = 0;
 
     int source, dest, length;
-
+    printf("Receiving from subnet in station %d\n", ThisStation);
     logLine(trace, "Receiving from subnet in station %d\n", ThisStation);
     //printf("Før FromSubnet\n");
+    printf("Frame char: %c\n", (char) r);
     FromSubnet(&source, &dest, (char *) r, &length);
     //printf("Efter FromSubnet\n");
     //print_frame(r, "received");
@@ -632,18 +633,23 @@ int from_physical_layer(frame *r) {
     r->source = source;
     r->dest = dest;
 
-    printf("frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data->data);
+    printf("frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data);
     return 0;
 }
 
 
 void to_physical_layer(frame *r) {
+    printf("3: frame source: %i, dest: %i, info: %s\n", r->source, r->dest, r->info.data);
 
+    int result;
+    printf("FRAME: %s\n", r->info);
     if (ThisStation == r->dest) {
-        ToSubnet(ThisStation, r->source, (char *) r, sizeof(frame));
+        result = ToSubnet(ThisStation, r->source, (char *) r->info.data, sizeof(frame));
     } else {
-        ToSubnet(ThisStation, r->dest, (char *) r, sizeof(frame));
+        result = ToSubnet(ThisStation, r->dest, (char *) r->info.data, sizeof(frame));
     }
+
+    printf("Frame %s was sent successfully: %i\n",r->info.data->data, result);
     print_frame(r, "sending");
 }
 

@@ -49,56 +49,31 @@ int FromSubnet(int *source, int *dest, char *buffer, int *length)
       if (--GC.InData.size == 0)                 /* er der mere i datakøen? */
 	res = SUCCES;
       else
-	res = MORE;
+        res = MORE;
 
       UNLOCK( &GC.InData.lock, FromSubnet );  /* lås den kritiske region op */
 
-      /* Der 'castes' til en pointer til hukommelses elememtets data */ 
+      /* Der 'castes' til en pointer til hukommelses elememtets data */
       inbuf = (BufStr)ValueOfFQE( e );
-
-      //Dette er en test;
-/*
-      char *test;
-
-      *source = inbuf->station;
-      *dest   = ThisStation;
-        printf("Start memcopy\n");
-      memcopy(test, (char *)inbuf->data, inbuf->size);
-        printf("slutter memcopy\n");
-      *length = inbuf->size;
-      frame *r;
-      r = (frame *) test;
-      printf("Printer\n");
-      printf("Subnet frame BEFORE DELETE: Source: %i, Dest: %i, Info %s\n", r->source, r->dest, r->info.data->data);
-*/
-
-
-
-
       DeleteFQE( e );
-
-
-      //printf("Subnet frame AFTER DELETE: Source: %i, Dest: %i, Info %s\n", r->source, r->dest, r->info.data->data);
 
       /* Henter data */
       *source = inbuf->station;
       *dest   = ThisStation;
-      printf("Start memcopy\n");
+
+        printf("FromSubnet: DATA: %s\n", inbuf->data);
+        printf("1. before memcopy\n");
       memcopy(buffer, (char *)inbuf->data, inbuf->size);
-
-      frame *r;
-      r = (frame *) buffer;
-      printf("Subnet frame AFTER DELETE: Source: %i, Dest: %i, Info %s\n", r->source, r->dest, r->info.data->data);
-
-
-      printf("slutter memcopy\n");
+        printf("1. after memcopy\n");
       *length = inbuf->size;
 
       /* Data kopieres til log-bufferen */
       sprintf(msg, "(%d) queued. FromSubnet: ", GC.InData.size );
       msglen = strlen(msg);
+        printf("2. before memcopy\n");
       memcopy( (char *)msg + msglen, (char *)inbuf->data,  inbuf->size );
-      msg[msglen + inbuf->size] = 10; /* linieskift                */ 
+        printf("2. after memcopy\n");
+      msg[msglen + inbuf->size] = 10; /* linieskift                */
       LOGINFO( msg , (msglen + inbuf->size + 1));
 
       GC.StationStat.frame_delv++;

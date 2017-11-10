@@ -171,7 +171,7 @@ void network_layer_main_loop() {
     i = 0;
     j = 0;
 
-    //printf("Starter main loop for station %i\n", ThisStation);
+    printf("Starter main loop for station %i\n", ThisStation);
 
     while (true) {
         Wait(&event, events_we_handle);
@@ -244,19 +244,17 @@ void network_layer_main_loop() {
 
 
                 //TODO Skal ikke være en packet, men et datagram
-                packet *p;
                 datagram *d;
                 e = DequeueFQ(for_queue);
 
                 d = (datagram *) malloc(sizeof(datagram));
 
-                p = e->val;
-                d->data = p;
+                d->data = e->val;
                 d->from = ThisStation;
-                //d->to = p->dest;
-                d->to = forward(p->dest);
+                d->to = forward(d->data->dest);
 
-                printf("Sender besked fra transport laget, fra: %i, til: %i\n", d->from, d->to);
+                printf("Sender besked fra transportlaget, fra: %i, til: %i, data: %s\n", d->from, d->to,
+                       (char *) d->data->data);
 
                 //printf("Størrelse af datagram: %i\n", sizeof(datagram));
 
@@ -321,7 +319,7 @@ void from_network_layer(datagram *d, FifoQueue from_network_layer_queue, mlock_t
         memcpy(d, (char *) ValueOfFQE(e), sizeof(datagram));
 
         //printf("Value of datagram BEFORE free: Source: %i, Dest: %i, Info: %s\n", d->from, d->to, d->data->data);
-        free((void *) ValueOfFQE(e));
+//        free((void *) ValueOfFQE(e));
 
         //printf("Value of datagram AFTER free: Source: %i, Dest: %i, Info: %s\n", d->from, d->to, d->data->data);
 

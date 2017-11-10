@@ -59,7 +59,10 @@ int ToSubnet(int source, int dest, char *buffer, int length)
   outbuf.size    = ( length < BUFFERSIZE ? length : BUFFERSIZE );
 
   /* kopiering af data til bufferen */
+    printf("1: TO SUBNET DATA: %s\n", buffer);
   memcopy( (char *)outbuf.data, buffer, outbuf.size );
+
+    printf("2: TO SUBNET DATA: %s\n", outbuf.data);
 
   /* Hvis stationen er meldt aktiv, så sendes der til den */
   if ( GC.active[dest] ) 
