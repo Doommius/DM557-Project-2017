@@ -1,0 +1,7 @@
+Receiving
+
+Link layer is the package for us? mac adress
+network layer is the ip ours ? or do we need to forward it
+transport layer
+
+Send

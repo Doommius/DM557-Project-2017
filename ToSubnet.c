@@ -61,7 +61,7 @@ int ToSubnet(int source, int dest, char *buffer, int length)
   /* kopiering af data til bufferen */
   memcopy( (char *)outbuf.data, buffer, outbuf.size );
 
-  /* Hvis stationen er meldt aktiv, så sendes der til den */
+    /* Hvis stationen er meldt aktiv, så sendes der til den */
   if ( GC.active[dest] ) 
     {
       /* Der checkes om det er lovligt (sekvensnummer) at sende til stationen */

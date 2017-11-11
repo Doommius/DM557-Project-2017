@@ -48,12 +48,12 @@ int FromSubnet(int *source, int *dest, char *buffer, int *length)
       if (--GC.InData.size == 0)                 /* er der mere i datakøen? */
 	res = SUCCES;
       else
-	res = MORE;
+        res = MORE;
 
       UNLOCK( &GC.InData.lock, FromSubnet );  /* lås den kritiske region op */
 
-      /* Der 'castes' til en pointer til hukommelses elememtets data */ 
-      inbuf = (BufStr)ValueOfFQE( e ); 
+      /* Der 'castes' til en pointer til hukommelses elememtets data */
+      inbuf = (BufStr)ValueOfFQE( e );
       DeleteFQE( e );
 
       /* Henter data */
@@ -66,7 +66,7 @@ int FromSubnet(int *source, int *dest, char *buffer, int *length)
       sprintf(msg, "(%d) queued. FromSubnet: ", GC.InData.size );
       msglen = strlen(msg);
       memcopy( (char *)msg + msglen, (char *)inbuf->data,  inbuf->size );
-      msg[msglen + inbuf->size] = 10; /* linieskift                */ 
+      msg[msglen + inbuf->size] = 10; /* linieskift                */
       LOGINFO( msg , (msglen + inbuf->size + 1));
 
       GC.StationStat.frame_delv++;

@@ -5,29 +5,49 @@
  *      Author: jacob
  */
 
+#include "fifoqueue.h"
+
+
 #ifndef RDT_H_
 #define RDT_H_
 
-/* Events */
-#define network_layer_allowed_to_send  0x00000004
-#define network_layer_ready            0x00000008
-#define data_for_network_layer         0x00000010
 
-#define frame_timer_timeout_millis  250
-#define act_timer_timeout_millis     50
+
+#define FRAME_TIMER_TIMEOUT_MILLIS  250
+#define ACT_TIMER_TIMEOUT_MILLIS     50
 
 #define MAX_PKT 8        /* determines packet size in bytes */
+#define MAX_SEG 8
 
 typedef enum {
     false, true
 } boolean;        /* boolean type */
+
 typedef unsigned int seq_nr;        /* sequence or ack numbers */
+
+
 typedef struct {
     char data[MAX_PKT];
 
     int source;
     int dest;
 } packet;        /* packet definition */
+
+
+
+/* For now only DATAGRAM is used, but for dynamic routing, ROUTERINFO is defined */
+typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */
+
+
+typedef struct {                        /* datagrams are transported in this layer */
+    packet *data;   /* Data from the transport layer segment  */
+    datagram_kind kind;                   /* what kind of a datagram is it? */
+    int from;                                                /* From station address */
+    int to;                                                /* To station address */
+    int globaldest;
+    char msg[MAX_PKT];
+} datagram;
+
 typedef enum {
     DATA, ACK, NAK
 } frame_kind;        /* frame_kind definition */
@@ -37,7 +57,7 @@ typedef struct {        /* frames are transported in this layer */
     frame_kind kind;        /* what kind of a frame is it? */
     seq_nr seq;           /* sequence number */
     seq_nr ack;           /* acknowledgement number */
-    packet info;          /* the network layer packet */
+    datagram info;          /* the network layer packet */
     int sendTime;
     int recvTime;
 
@@ -51,12 +71,6 @@ typedef struct {        /* frames are transported in this layer */
  * makes the simulation trace look better, showing unused fields as zeros.
  */
 void init_frame(frame *s, int count);
-
-/* Fetch a packet from the network layer for transmission on the channel. */
-void from_network_layer(packet *p);
-
-/* Deliver information from an inbound frame to the network layer. */
-void to_network_layer(packet *p);
 
 /* Go get an inbound frame from the physical layer and copy it to r. */
 int from_physical_layer(frame *r);
@@ -75,13 +89,6 @@ void start_ack_timer(int station);
 
 /* Stop the auxiliary timer and disable the ack_timeout event. */
 void stop_ack_timer(int station);
-
-/* Allow the network layer to cause a network_layer_ready event. */
-void enable_network_layer(int station);
-
-/* Forbid the network layer from causing a network_layer_ready event. */
-void disable_network_layer(int station);
-
 /* In case of a timeout event, it is possible to find out the sequence
  * number of the frame that timed out (this is the sequence number parameter
  * in the start_timer function). For this, the simulator must know the maximum
@@ -93,6 +100,12 @@ void disable_network_layer(int station);
 void init_max_seqnr(unsigned int o);
 
 unsigned int get_timedout_seqnr(void);
+
+int get_ThisStation();
+
+FifoQueue get_from_queue();
+
+FifoQueue get_for_queue();
 
 /* Macro inc is expanded in-line: Increment k circularly. */
 #define inc(k) if (k < MAX_SEQ) k = k + 1; else k = 0
