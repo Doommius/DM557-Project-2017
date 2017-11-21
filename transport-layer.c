@@ -78,11 +78,13 @@ int disconnect(int connection_id) {
 int receive(char unsure, unsigned char *data, unsigned int *timeout_sec) {
 
 
-    packet *p2;
+    packet *p;
 
-    p2 = DequeueFQ()->val;
+
+    p = DequeueFQ(get_queue_NtoT)->val;
 
     data = (malloc(8 * sizeof(unsigned char *)));
+    data = p->data;
     //dequeue from network to transport queue.
 
 }

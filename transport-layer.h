@@ -50,7 +50,7 @@ typedef enum
 typedef int transport_address;
 
 /* You may already have this in the NL  */
-typedef unsigned char host_address;
+typedef unsigned int host_address;
 
 
 typedef struct connection_s
@@ -91,7 +91,7 @@ int disconnect(int connection_id);
  * Set up a connection, so it is ready to receive data on, and wait for the main loop to signal all data received.
  * Could have a timeout for a connection - and cleanup afterwards.
  */
-int receive(char, unsigned char *, unsigned int *);
+int receive(char, unsigned char *buf, unsigned int *);
 
 /*
  * On connection specified, send the bytes amount of data from buf.
