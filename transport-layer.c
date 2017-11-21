@@ -22,8 +22,32 @@ mlock_t *write_lock;
  * Blocks while waiting
  */
 int listen(transport_address local_address) {
+    event_t event;
+    FifoQueue from_queue;                /* Queue for data from network layer */
+    FifoQueueEntry e;
+    char* data;
+    Lock(network_layer_lock);
+    from_queue = (FifoQueue) get_queue_NtoT();
 
-//    receive()
+    long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
+
+    //This is a holding function for now.
+    boolean shouldbreak = true;
+    while (true) {
+
+        //TODO: do so it also waits for timeout.
+        Wait(&event, events_we_handle);
+
+        receive("test", data, 1000);
+
+        logLine(succes, "Received message: %s\n", data);
+
+        //something something done listening.
+        if(false){
+            break;
+        }
+    }
+
 }
 
 
@@ -43,7 +67,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  * Disconnect the connection with the supplied id.
  * returns appropriate errorcode or 0 if successfull
  */
-int disconnect(int connection_id){
+int disconnect(int connection_id) {
 
 }
 
@@ -52,28 +76,15 @@ int disconnect(int connection_id){
  * Could have a timeout for a connection - and cleanup afterwards.
  */
 int receive(char unsure, unsigned char *data, unsigned int *timeout_sec) {
-    event_t event;
-    FifoQueue from_queue;                /* Queue for data from network layer */
-    FifoQueueEntry e;
-    data = (malloc(64 * sizeof(unsigned char *)));
-    Lock(network_layer_lock);
-    from_queue = (FifoQueue) get_queue_NtoT();
 
-    long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
-    while (true) {
 
-        //TODO: do so it also waits for timeout.
-        Wait(&event, events_we_handle);
+    packet *p2;
 
-        e = DequeueFQ(from_queue);
+    p2 = DequeueFQ()->val;
 
-        packet *p = e->val;
+    data = (malloc(8 * sizeof(unsigned char *)));
+    //dequeue from network to transport queue.
 
-        data = (unsigned char *) p->data;
-        logLine(succes, "Received message: %s\n", p->data);
-        Unlock(network_layer_lock);
-        break;
-    }
 }
 
 /*
