@@ -101,6 +101,8 @@ void init_max_seqnr(unsigned int o);
 
 unsigned int get_timedout_seqnr(void);
 
+void selective_repeat(void);
+
 int get_ThisStation();
 
 FifoQueue get_from_queue();

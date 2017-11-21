@@ -21,6 +21,8 @@
 #define MAX_SEQ 127        /* should be 2^n - 1 */
 #define NR_BUFS 8
 
+
+
 /* Globale variable */
 
 char *StationName;         /* Globalvariabel til at overføre programnavn      */
