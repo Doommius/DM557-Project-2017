@@ -1,6 +1,12 @@
 #ifndef __TRANSPORT_LAYER_H__
 #define __TRANSPORT_LAYER_H__
 
+
+
+
+#define TPDU_PAYLOAD_SIZE 128;
+#define TPDU_SIZE 8
+
 typedef enum
 {
     call_req,
@@ -48,7 +54,7 @@ typedef struct connection_s
 {
     transport_address   local_address;
     transport_address   remote_address;
-    con_state           state;
+    connection_state    state;
     long                timer;
     unsigned char      *user_buf_addr;
     unsigned int        byte_count;
