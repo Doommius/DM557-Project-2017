@@ -16,8 +16,7 @@
 #define FRAME_TIMER_TIMEOUT_MILLIS  250
 #define ACT_TIMER_TIMEOUT_MILLIS     50
 
-#define MAX_PKT 8        /* determines packet size in bytes */
-#define MAX_SEG 8
+#define MAX_PKT 16        /* determines packet size in bytes */
 
 typedef enum {
     false, true

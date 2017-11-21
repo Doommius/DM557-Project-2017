@@ -8,7 +8,7 @@
 #include "events.h"
 #include "rdt.h"
 
-#define NR_BUFS 8
+#define NR_BUFS 5
 
 
 typedef struct {

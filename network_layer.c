@@ -157,6 +157,7 @@ void network_layer_main_loop() {
         Wait(&event, events_we_handle);
         switch (event.type) {
             case NETWORK_LAYER_ALLOWED_TO_SEND:
+                printf("NETWORK LAYER ALLOWED TO SEND\n");
                 Lock(network_layer_lock);
 
                 if (network_layer_enabled[ThisStation] && !EmptyFQ(from_network_layer_queue)) {
@@ -169,6 +170,7 @@ void network_layer_main_loop() {
                 break;
 
             case DATA_FOR_NETWORK_LAYER:
+                printf("Got message from link layer\n");
                 Lock(network_layer_lock);
 
                 datagram *d2;
@@ -176,6 +178,8 @@ void network_layer_main_loop() {
                 e = DequeueFQ(for_network_layer_queue);
 
                 d2 = (datagram *) e->val;
+
+                printf("");
 
                 if (d2->globaldest == ThisStation ){
 
@@ -205,16 +209,24 @@ void network_layer_main_loop() {
                 break;
 
             case DATA_FROM_TRANSPORT_LAYER:
+                printf("DATA FROM TRANSPORT LAYER\n");
 
                 Lock(network_layer_lock);
                 for_queue = (FifoQueue) get_queue_TtoN();
 
                 datagram *d;
+                packet *p;
+
                 e = DequeueFQ(for_queue);
+                p = (packet *) malloc(sizeof(packet));
 
                 d = (datagram *) malloc(sizeof(datagram));
 
-                d->data = e->val;
+                memcpy(p, (char *) ValueOfFQE(e), sizeof(packet));
+                free( (void *)ValueOfFQE(e));
+                DeleteFQE(e);
+
+                d->data = p;
                 d->from = ThisStation;
                 d->globaldest = d->data->dest;
                 strcpy(d->msg, d->data->data);

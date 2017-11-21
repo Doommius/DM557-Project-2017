@@ -19,7 +19,7 @@
 #define ACTIVATE(n, f) Activate(n, f, #f)
 
 #define MAX_SEQ 127        /* should be 2^n - 1 */
-#define NR_BUFS 8
+#define NR_BUFS 5
 
 
 
@@ -87,23 +87,27 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
     r->kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
         r->info = buffer[frame_nr % NR_BUFS];
+        printf("1. DATA\n");
     }
 
     r->source = ThisStation;
     r->dest = r->info.to;
 
-    printf("Sending frame from: %i, to %i, Message: %s\n", r->source, r->dest, r->info.msg);
-
     r->seq = frame_nr;        /* only meaningful for data frames */
     r->ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
     if (fk == NAK) {
         no_nak = false;        /* one nak per frame, please */
+        printf("NAK\n");
     }
 
     to_physical_layer(r);
 
+
+    printf("Sending frame from: %i, to %i, Message: %s\n", r->source, r->dest, r->info.msg);
+
     if (fk == DATA) {
         start_timer(frame_nr, r->dest);
+        printf("2. DATA\n");
     }
     stop_ack_timer(ThisStation);        /* no need for separate ack frame */
 }
@@ -327,6 +331,7 @@ void selective_repeat() {
 
         switch (event.type) {
             case NETWORK_LAYER_READY:        /* accept, save, and transmit a new frame */
+                printf("NETWORK_LAYER_READY\n");
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
                 from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
@@ -336,6 +341,7 @@ void selective_repeat() {
                 break;
 
             case frame_arrival:        /* a data or control frame has arrived */
+                printf("FRAME_ARRIVAL\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
                 if (r.kind == DATA) {
                     /* An undamaged frame has arrived. */
@@ -377,6 +383,7 @@ void selective_repeat() {
                 break;
 
             case timeout: /* Ack timeout or regular timeout*/
+                printf("TIMEOUT\n");
                 // Check if it is the ack_timer
                 timer_id = event.timer_id;
                 logLine(trace, "Timeout with id: %d - acktimer_id is %d\n", timer_id, ack_timer_id);
