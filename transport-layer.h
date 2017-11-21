@@ -57,7 +57,7 @@ typedef struct connection_s
 {
     transport_address   local_address;
     transport_address   remote_address;
-    con_state           state;
+    connection_state    state;
     long                timer;
     unsigned char      *user_buf_addr;
     unsigned int        byte_count;
