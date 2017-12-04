@@ -6,9 +6,13 @@
 #define __TRANSPORT_LAYER_H__
 
 
+#include "subnetsupport.h"
+
 #define TPDU_PAYLOAD_SIZE 128;
 
 #define TPDU_SIZE 8;
+
+mlock_t *transport_layer_lock;
 
 typedef enum
 {

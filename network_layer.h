@@ -10,6 +10,9 @@
 
 #define NR_BUFS 5
 
+FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
+FifoQueue queue_NtoT;   //Queue from Network Layer to Transport Layer
+
 
 typedef struct {
     int station;        // Address of station

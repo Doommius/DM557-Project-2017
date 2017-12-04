@@ -2,14 +2,17 @@
 // Created by jervelund on 11/21/17.
 //
 
+#include <caca_conio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "transport_layer.h"
 #include "subnetsupport.h"
 #include "debug.h"
 #include "network_layer.h"
 #include "subnet.h"
-#include <immintrin.h>
-#include "rdt.h"
 
+
+int connectionid; //do we even need this.
 
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
@@ -20,32 +23,36 @@ mlock_t *write_lock;
  * Blocks while waiting
  */
 int listen(transport_address local_address) {
-    event_t event;
-    FifoQueue from_queue;                /* Queue for data from network layer */
+    tpdu_t* packet;
     FifoQueueEntry e;
-    char* data;
-    Lock(network_layer_lock);
-    from_queue = (FifoQueue) get_queue_NtoT();
-
+    event_t event;
     long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
-    //This is a holding function for now.
-    boolean shouldbreak = true;
-    while (true) {
-
+    while(true){
         //TODO: do so it also waits for timeout.
         Wait(&event, events_we_handle);
 
-        receive("test", data, 1000);
-
-        logLine(succes, "Received message: %s\n", data);
-
-        //something something done listening.
-        if(false){
-            break;
+        if((int)event.msg ==  get_ThisStation()){
+            Lock(transport_layer_lock);
+            e = DequeueFQ(queue_NtoT);
+            if(!e){
+                printf("Error with queue");
+            }else{
+                memcpy(packet, ValueOfFQE(e),sizeof(packet));
+                free(ValueOfFQE( e ));
+                DeleteFQ(e);
+                if(packet->bytes){
+                    printf("connection accepted");
+                    Unlock(transport_layer_lock);
+                    return 0;
+                }else{
+                    printf("connection failed.");
+                    Unlock(transport_layer_lock);
+                    return -1;
+                }
+            }
         }
     }
-
 }
 
 
