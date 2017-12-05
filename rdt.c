@@ -340,17 +340,20 @@ void selective_repeat() {
                 //Lock(write_lock);
                 printf("NETWORK_LAYER_READY\n");
                 logLine(trace, "Network layer delivers frame - lets send it\n");
-                nbuffered = nbuffered + 1;        /* expand the window */
+                if (!EmptyFQ(from_network_layer_queue)) {
+                    nbuffered = nbuffered + 1;        /* expand the window */
 
-                from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue, network_layer_lock); /* fetch new packet */
+                    from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue,
+                                       network_layer_lock); /* fetch new packet */
 
-                dest = out_buf[next_frame_to_send % NR_BUFS].to;
-                network_layer_enabled[dest] = false;
+                    dest = out_buf[next_frame_to_send % NR_BUFS].to;
+                    network_layer_enabled[dest] = false;
 
-                printf("1. send, dest: %i\n", dest);
-                send_frame(DATA, next_frame_to_send, frame_expected, out_buf, dest);        /* transmit the frame */
-                inc(next_frame_to_send);        /* advance upper window edge */
-                //Unlock(write_lock);
+                    printf("1. send, dest: %i\n", dest);
+                    send_frame(DATA, next_frame_to_send, frame_expected, out_buf, dest);        /* transmit the frame */
+                    inc(next_frame_to_send);        /* advance upper window edge */
+                    //Unlock(write_lock);
+                }
                 break;
 
             case frame_arrival:        /* a data or control frame has arrived */
