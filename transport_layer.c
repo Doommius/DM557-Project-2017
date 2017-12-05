@@ -2,6 +2,9 @@
 // Created by jervelund on 11/21/17.
 //
 
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "transport_layer.h"
 #include "subnetsupport.h"
 #include "debug.h"
@@ -25,6 +28,7 @@ connection connections[NUM_CONNECTIONS];
  * Blocks while waiting
  */
 int listen(transport_address local_address) {
+    tpdu* packet;
     event_t event;
     FifoQueue from_queue;                /* Queue for data from network layer */
     FifoQueueEntry e;
@@ -34,23 +38,31 @@ int listen(transport_address local_address) {
 
     long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
-    //This is a holding function for now.
-    boolean shouldbreak = true;
-    while (true) {
-
+    while(true){
         //TODO: do so it also waits for timeout.
         Wait(&event, events_we_handle);
 
-//        receive("test", data, 1000);
-
-        logLine(succes, "Received message: %s\n", data);
-
-        //something something done listening.
-        if(false){
-            break;
+        if((int)event.msg ==  get_ThisStation()){
+            Lock(transport_layer_lock);
+            e = DequeueFQ(queue_NtoT);
+            if(!e){
+                printf("Error with queue");
+            }else{
+                memcpy(packet, ValueOfFQE(e),sizeof(packet));
+                free(ValueOfFQE( e ));
+                DeleteFQ(e);
+                if(packet->bytes){
+                    printf("connection accepted");
+                    Unlock(transport_layer_lock);
+                    return 0;
+                }else{
+                    printf("connection failed.");
+                    Unlock(transport_layer_lock);
+                    return -1;
+                }
+            }
         }
     }
-
 }
 
 
@@ -60,6 +72,9 @@ int listen(transport_address local_address) {
  *
  * Once you have used the connection to send(), you can then be able to receive
  * Returns the connection id - or an appropriate error code
+ *
+ *
+ * TODO: We may get issues due to using Connection ID as index in our connections array.
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
     Lock(transport_layer_lock);
@@ -93,16 +108,25 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
         printf("Connection failed.\n");
         return -1;
     }
+
+
+
+
+
 }
 
 /*
  * Disconnect the connection with the supplied id.
  * returns appropriate errorcode or 0 if successfull
+ *
+ * TODO; Do we need to clear the element from the connections array,
+ * TODO; I'm thinking it'll be overwritten in the next iteration.
+ *
  */
 int disconnect(int connection_id) {
     Lock(transport_layer_lock);
     tpdu *data = malloc(sizeof(tpdu));
-    data->type = clear_conf;
+    data->type = clear_conf; //TODO maybe make custom type?
     data->destport = connections[connection_id].remote_address;
     EnqueueFQ(NewFQE(data),queue_TtoN);
     signal_link_layer_if_allowed(DATA_FOR_NETWORK_LAYER,NULL);
@@ -115,13 +139,15 @@ int disconnect(int connection_id) {
  * Set up a connection, so it is ready to receive data on, and wait for the main loop to signal all data received.
  * Could have a timeout for a connection - and cleanup afterwards.
  */
-int receive(char port, unsigned char *data, unsigned int *data_size) {
+int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize) {
+
+
     packet *p;
 
     p = DequeueFQ(get_queue_NtoT)->val;
 
-    data = (malloc(8 * sizeof(unsigned char *)));
-    data = p->data;
+    buf = (malloc(8 * sizeof(unsigned char *)));
+    buf = p->data;
     //dequeue from network to transport queue.
 
 }
