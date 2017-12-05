@@ -5,6 +5,7 @@
 #ifndef EVENTS_H
 #define EVENTS_H
 
+//#no care about hex
 #define FRAME_ARRIVAL 1
 #define TIME_OUT 2
 #define NETWORK_LAYER_ALLOWED_TO_SEND 4

@@ -18,6 +18,8 @@
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
 
+event_t event;
+
 int connectionid; //do we even need this.
 
 connection connections[NUM_CONNECTIONS];
@@ -141,6 +143,7 @@ int disconnect(int connection_id) {
  */
 int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize) {
 
+    Wait(&event,DATA_FOR_APPLICATION_LAYER);
 
     packet *p;
 
