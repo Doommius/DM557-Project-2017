@@ -161,7 +161,7 @@ void network_layer_main_loop() {
 
                 printf("NETWORK LAYER ALLOWED TO SEND\n");
 
-                if (!EmptyFQ(from_network_layer_queue)) {
+                if (!EmptyFQ(from_network_layer_queue) && network_layer_enabled[ThisStation]) {
                     // Signal element is ready
                     logLine(info, "Sending signal for message #%d\n", i);
                     Signal(NETWORK_LAYER_READY, NULL);
@@ -270,7 +270,9 @@ void network_layer_main_loop() {
  */
 void signal_link_layer_if_allowed(int address, FifoQueue queue) {
 
+    printf("Signal link layer?\n");
     if (!EmptyFQ(queue) && network_layer_enabled[address])  {
+        printf("Signalling link layer\n");
         Signal(NETWORK_LAYER_READY, NULL);
     }
 }
