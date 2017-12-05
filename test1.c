@@ -4,7 +4,7 @@
 #include <test1.h>
 #include <caca_conio.h>
 #include <cstdlib>
-#include "transport-layer.h"
+#include "transport_layer.h"
 #include "network_layer.h"
 #include "rdt.h"
 #include "subnet.h"
@@ -17,28 +17,24 @@
 char *StationName;         /* Globalvariabel til at overføre programnavn      */
 int ThisStation;           /* Globalvariabel der identificerer denne station. */
 
-LogBuf mylog;                /* logbufferen                                     */
+LogBuf mylog;              /* logbufferen                                     */
 log_type LogStyle;         /* Hvilken slags log skal systemet føre            */
 
 
-void Station1_application_layer(void)
-{
+void Station1_application_layer(void) {
     connect(2, 20, 20);
     sleep(5);
     Stop();
 }
 
-void Station2_application_layer(void)
-{
+void Station2_application_layer(void) {
     listen(20);
 }
 
-void Station3_application_layer(void)
-{
+void Station3_application_layer(void) {
 }
 
-void Station4_application_layer(void)
-{
+void Station4_application_layer(void) {
 }
 
 

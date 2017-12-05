@@ -2,22 +2,19 @@
 // Created by jervelund on 11/21/17.
 //
 
-#include <caca_conio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "transport_layer.h"
 #include "subnetsupport.h"
 #include "debug.h"
 #include "network_layer.h"
 #include "subnet.h"
+#include <immintrin.h>
+#include "rdt.h"
 
-
-int connectionid; //do we even need this.
-
-connection_t connections[8]; //array for connections
 
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
+
+connection connections[NUM_CONNECTIONS];
 
 
 /*
@@ -25,36 +22,32 @@ mlock_t *write_lock;
  * Blocks while waiting
  */
 int listen(transport_address local_address) {
-    tpdu_t* packet;
-    FifoQueueEntry e;
     event_t event;
+    FifoQueue from_queue;                /* Queue for data from network layer */
+    FifoQueueEntry e;
+    char* data;
+    Lock(network_layer_lock);
+    from_queue = (FifoQueue) get_queue_NtoT();
+
     long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
-    while(true){
+    //This is a holding function for now.
+    boolean shouldbreak = true;
+    while (true) {
+
         //TODO: do so it also waits for timeout.
         Wait(&event, events_we_handle);
 
-        if((int)event.msg ==  get_ThisStation()){
-            Lock(transport_layer_lock);
-            e = DequeueFQ(queue_NtoT);
-            if(!e){
-                printf("Error with queue");
-            }else{
-                memcpy(packet, ValueOfFQE(e),sizeof(packet));
-                free(ValueOfFQE( e ));
-                DeleteFQ(e);
-                if(packet->bytes){
-                    printf("connection accepted");
-                    Unlock(transport_layer_lock);
-                    return 0;
-                }else{
-                    printf("connection failed.");
-                    Unlock(transport_layer_lock);
-                    return -1;
-                }
-            }
+//        receive("test", data, 1000);
+
+        logLine(succes, "Received message: %s\n", data);
+
+        //something something done listening.
+        if(false){
+            break;
         }
     }
+
 }
 
 
@@ -66,36 +59,9 @@ int listen(transport_address local_address) {
  * Returns the connection id - or an appropriate error code
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
-    Lock(transport_layer_lock);
-    tpdu_t *data = malloc(sizeof(tpdu_t));
+    int response;
 
-    data->type = call_req;
-    data->returnport = local_ta;
-    data->destport = remote_ta;
-    data->dest = remote_host;
-
-    EnqueueFQ(NewFQE(data),queue_TtoN);
-    Signal(DATA_FOR_NETWORK_LAYER, NULL);
-    Unlock(transport_layer_lock);
-    if(listen(local_ta)){
-        connectionid++;
-        connections[connectionid].state = established;
-        connections[connectionid].local_address = local_ta;
-        connections[connectionid].remote_address = remote_ta;
-        connections[connectionid].remote_host = remote_host;
-        connections[connectionid].id = connectionid;
-        printf("Connection Established");
-        //TODO Load all the infomaton about the connection into some kind of data structure.
-        return connectionid;
-    }else{
-        printf("Connection failed.");
-        return -1;
-    }
-
-
-
-
-
+    response = listen(remote_ta);
 }
 
 /*
@@ -110,11 +76,8 @@ int disconnect(int connection_id) {
  * Set up a connection, so it is ready to receive data on, and wait for the main loop to signal all data received.
  * Could have a timeout for a connection - and cleanup afterwards.
  */
-int receive(char unsure, unsigned char *data, unsigned int *timeout_sec) {
-
-
+int receive(char port, unsigned char *data, unsigned int *data_size) {
     packet *p;
-
 
     p = DequeueFQ(get_queue_NtoT)->val;
 
@@ -128,7 +91,9 @@ int receive(char unsure, unsigned char *data, unsigned int *timeout_sec) {
  * On connection specified, send the bytes amount of data from buf.
  * Must break the message down into chunks of a manageble size, and queue them up.
  */
-int send(int connection_id, unsigned char *buf, unsigned int bytes);
+int send(int connection_id, unsigned char *buf, unsigned int bytes) {
+
+}
 
 
 /*

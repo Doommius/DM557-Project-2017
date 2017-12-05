@@ -6,13 +6,11 @@
 #define __TRANSPORT_LAYER_H__
 
 
-#include "subnetsupport.h"
+#define TPDU_PAYLOAD_SIZE 128
 
-#define TPDU_PAYLOAD_SIZE 128;
+#define TPDU_SIZE 8
 
-#define TPDU_SIZE 8;
-
-mlock_t *transport_layer_lock;
+#define NUM_CONNECTIONS 4
 
 typedef enum
 {
@@ -24,23 +22,20 @@ typedef enum
     data_tpdu
 } tpdu_type;
 
-typedef struct tpdu_s
+typedef struct
 {
-    int             destport;
-    int             returnport;
-    char            m;   //What is m and q?
+    char            m;
     char            q;
-    unsigned int    dest;
     tpdu_type       type;
     unsigned int    bytes;
     char            payload[TPDU_PAYLOAD_SIZE];
-} tpdu_t;
+} tpdu;
 
-typedef struct transport_packet_s
+typedef struct
 {
     char    vc_id;
     char    data[TPDU_SIZE];
-} transport_packet_t;
+} transport_packet;
 
 typedef enum
 {
@@ -60,19 +55,17 @@ typedef int transport_address;
 typedef unsigned int host_address;
 
 
-typedef struct connection_s
+typedef struct
 {
     transport_address   local_address;
     transport_address   remote_address;
     connection_state    state;
-    host_address remote_host;
     long                timer;
     unsigned char      *user_buf_addr;
-    int                 id;
     unsigned int        byte_count;
     unsigned int        clr_req_received;
     unsigned int        credits;
-} connection_t;
+} connection;
 
 /*
  * Listen for incomming calls on the specified transport_address.
