@@ -16,7 +16,7 @@
 #define FRAME_TIMER_TIMEOUT_MILLIS  250
 #define ACT_TIMER_TIMEOUT_MILLIS     50
 
-#define MAX_PKT 16        /* determines packet size in bytes */
+#define MAX_PKT 8       /* determines packet size in bytes */
 
 typedef enum {
     false, true
@@ -39,12 +39,12 @@ typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind defin
 
 
 typedef struct {                        /* datagrams are transported in this layer */
-    packet *data;   /* Data from the transport layer segment  */
+    packet data;   /* Data from the transport layer segment  */
     datagram_kind kind;                   /* what kind of a datagram is it? */
     int from;                                                /* From station address */
     int to;                                                /* To station address */
-    int globaldest;
-    char msg[MAX_PKT];
+    int globalDest;
+    int globalSource;
 } datagram;
 
 typedef enum {
@@ -75,7 +75,7 @@ void init_frame(frame *s, int count);
 int from_physical_layer(frame *r);
 
 /* Pass the frame to the physical layer for transmission. */
-void to_physical_layer(frame *r);
+void to_physical_layer(frame *r, int dest);
 
 /* Start the clock running and enable the timeout event. */
 void start_timer(seq_nr k, int station);
