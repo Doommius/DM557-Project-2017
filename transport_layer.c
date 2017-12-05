@@ -2,9 +2,9 @@
 // Created by jervelund on 11/21/17.
 //
 
-#include <caca_conio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "transport_layer.h"
 #include "subnetsupport.h"
 #include "debug.h"
@@ -64,6 +64,9 @@ int listen(transport_address local_address) {
  *
  * Once you have used the connection to send(), you can then be able to receive
  * Returns the connection id - or an appropriate error code
+ *
+ *
+ * TODO: We may get issues due to using Connection ID as index in our connections array.
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
     Lock(transport_layer_lock);
@@ -101,11 +104,15 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
 /*
  * Disconnect the connection with the supplied id.
  * returns appropriate errorcode or 0 if successfull
+ *
+ * TODO; Do we need to clear the element from the connections array,
+ * TODO; I'm thinking it'll be overwritten in the next iteration.
+ *
  */
 int disconnect(int connection_id) {
     Lock(transport_layer_lock);
     tpdu_t *data = malloc(sizeof(tpdu_t));
-    data->type = clear_conf;
+    data->type = clear_conf; //TODO maybe make custom type?
     data->destport = connections[connection_id].remote_address;
     EnqueueFQ(NewFQE(data),queue_TtoN);
     signal_link_layer_if_allowed(DATA_FOR_NETWORK_LAYER,NULL);
@@ -118,7 +125,7 @@ int disconnect(int connection_id) {
  * Set up a connection, so it is ready to receive data on, and wait for the main loop to signal all data received.
  * Could have a timeout for a connection - and cleanup afterwards.
  */
-int receive(char unsure, unsigned char *data, unsigned int *timeout_sec) {
+int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize) {
 
 
     packet *p;
@@ -126,8 +133,8 @@ int receive(char unsure, unsigned char *data, unsigned int *timeout_sec) {
 
     p = DequeueFQ(get_queue_NtoT)->val;
 
-    data = (malloc(8 * sizeof(unsigned char *)));
-    data = p->data;
+    buf = (malloc(8 * sizeof(unsigned char *)));
+    buf = p->data;
     //dequeue from network to transport queue.
 
 }
