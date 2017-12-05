@@ -8,17 +8,20 @@
 #include "network_layer.h"
 #include "subnet.h"
 #include <immintrin.h>
+#include <stdio.h>
 #include "rdt.h"
 
 
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
 
+int connectionid; //do we even need this.
+
 connection connections[NUM_CONNECTIONS];
 
 
 /*
- * Listen for incomming calls on the specified transport_address.
+ * Listen for incoming calls on the specified transport_address.
  * Blocks while waiting
  */
 int listen(transport_address local_address) {
@@ -59,9 +62,37 @@ int listen(transport_address local_address) {
  * Returns the connection id - or an appropriate error code
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
-    int response;
+    Lock(transport_layer_lock);
+    tpdu *data = malloc(sizeof(tpdu));
 
-    response = listen(remote_ta);
+    data->type = call_req;
+    data->returnport = local_ta;
+    data->destport = remote_ta;
+    data->dest = remote_host;
+
+    EnqueueFQ(NewFQE(data),queue_TtoN);
+    Signal(DATA_FOR_NETWORK_LAYER, NULL);
+    Unlock(transport_layer_lock);
+
+    if(listen(local_ta)) {
+        for (int connection = 0; connection < NUM_CONNECTIONS; ++connection) {
+            if(connections[connection].state == disconn) {
+                connections[connectionid].state = established;
+                connections[connectionid].local_address = local_ta;
+                connections[connectionid].remote_address = remote_ta;
+                connections[connectionid].remote_host = remote_host;
+                connections[connectionid].id = connection;
+                printf("Connection Established");
+                //TODO Load all the informaton about the connection into some kind of data structure.
+                return connection;
+            }
+        }
+        printf("Too many current connections.\n");
+        return -2; // Too many connections
+    } else {
+        printf("Connection failed.\n");
+        return -1;
+    }
 }
 
 /*
@@ -70,7 +101,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  */
 int disconnect(int connection_id) {
     Lock(transport_layer_lock);
-    tpdu_t *data = malloc(sizeof(tpdu_t));
+    tpdu *data = malloc(sizeof(tpdu));
     data->type = clear_conf;
     data->destport = connections[connection_id].remote_address;
     EnqueueFQ(NewFQE(data),queue_TtoN);

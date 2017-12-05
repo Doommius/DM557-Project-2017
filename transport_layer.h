@@ -1,4 +1,4 @@
-//
+/
 // Created by jervelund on 11/21/17.
 //
 
@@ -6,14 +6,18 @@
 #define __TRANSPORT_LAYER_H__
 
 
+#include "subnetsupport.h"
+
 #define TPDU_PAYLOAD_SIZE 128
 
 #define TPDU_SIZE 8
 
 #define NUM_CONNECTIONS 4
 
-typedef enum
-{
+mlock_t *transport_layer_lock;
+
+
+typedef enum {
     call_req,
     call_acc,
     tcredit,
@@ -22,23 +26,23 @@ typedef enum
     data_tpdu
 } tpdu_type;
 
-typedef struct
-{
-    char            m;
+typedef struct {
+    int             destport;
+    int             returnport;
+    char            m;   //What is m and q?
     char            q;
+    unsigned int    dest;
     tpdu_type       type;
     unsigned int    bytes;
     char            payload[TPDU_PAYLOAD_SIZE];
 } tpdu;
 
-typedef struct
-{
+typedef struct {
     char    vc_id;
     char    data[TPDU_SIZE];
 } transport_packet;
 
-typedef enum
-{
+typedef enum {
     disconn,
     receiving,
     established,
@@ -55,13 +59,14 @@ typedef int transport_address;
 typedef unsigned int host_address;
 
 
-typedef struct
-{
+typedef struct {
     transport_address   local_address;
     transport_address   remote_address;
     connection_state    state;
+    host_address        remote_host;
     long                timer;
     unsigned char      *user_buf_addr;
+    int                 id;
     unsigned int        byte_count;
     unsigned int        clr_req_received;
     unsigned int        credits;
