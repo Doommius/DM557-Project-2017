@@ -26,8 +26,11 @@ typedef enum
 
 typedef struct tpdu_s
 {
-    char            m;
+    int             destport;
+    int             returnport;
+    char            m;   //What is m and q?
     char            q;
+    unsigned int    dest;
     tpdu_type       type;
     unsigned int    bytes;
     char            payload[TPDU_PAYLOAD_SIZE];
@@ -62,8 +65,10 @@ typedef struct connection_s
     transport_address   local_address;
     transport_address   remote_address;
     connection_state    state;
+    host_address remote_host;
     long                timer;
     unsigned char      *user_buf_addr;
+    int                 id;
     unsigned int        byte_count;
     unsigned int        clr_req_received;
     unsigned int        credits;

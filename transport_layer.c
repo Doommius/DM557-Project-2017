@@ -14,6 +14,8 @@
 
 int connectionid; //do we even need this.
 
+connection_t connections[8]; //array for connections
+
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
 
@@ -64,6 +66,34 @@ int listen(transport_address local_address) {
  * Returns the connection id - or an appropriate error code
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
+    Lock(transport_layer_lock);
+    tpdu_t *data = malloc(sizeof(tpdu_t));
+
+    data->type = call_req;
+    data->returnport = local_ta;
+    data->destport = remote_ta;
+    data->dest = remote_host;
+
+    EnqueueFQ(NewFQE(data),queue_TtoN);
+    Signal(DATA_FOR_NETWORK_LAYER, NULL);
+    Unlock(transport_layer_lock);
+    if(listen(local_ta)){
+        connectionid++;
+        connections[connectionid].state = established;
+        connections[connectionid].local_address = local_ta;
+        connections[connectionid].remote_address = remote_ta;
+        connections[connectionid].remote_host = remote_host;
+        connections[connectionid].id = connectionid;
+        printf("Connection Established");
+        //TODO Load all the infomaton about the connection into some kind of data structure.
+        return connectionid;
+    }else{
+        printf("Connection failed.");
+        return -1;
+    }
+
+
+
 
 
 }
