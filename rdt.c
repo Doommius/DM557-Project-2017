@@ -337,7 +337,7 @@ void selective_repeat() {
 
         switch (event.type) {
             case NETWORK_LAYER_READY:        /* accept, save, and transmit a new frame */
-                Lock(write_lock);
+                //Lock(write_lock);
                 printf("NETWORK_LAYER_READY\n");
                 logLine(trace, "Network layer delivers frame - lets send it\n");
                 nbuffered = nbuffered + 1;        /* expand the window */
@@ -347,10 +347,10 @@ void selective_repeat() {
                 dest = out_buf[next_frame_to_send % NR_BUFS].to;
                 network_layer_enabled[dest] = false;
 
-                //printf("1. send, dest: %i\n", dest);
+                printf("1. send, dest: %i\n", dest);
                 send_frame(DATA, next_frame_to_send, frame_expected, out_buf, dest);        /* transmit the frame */
                 inc(next_frame_to_send);        /* advance upper window edge */
-                Unlock(write_lock);
+                //Unlock(write_lock);
                 break;
 
             case frame_arrival:        /* a data or control frame has arrived */
@@ -362,10 +362,10 @@ void selective_repeat() {
                     printf("Got DATA\n");
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak[r.source]) {
-                        //printf("2. send, dest: %i\n", r.source);
+                        printf("2. send, dest: %i\n", r.source);
                         send_frame(NAK, 0, frame_expected, out_buf, r.source);
                     } else {
-                        printf("1. starting ack timer for: %i\n", r.source);
+                        //printf("1. starting ack timer for: %i\n", r.source);
                         start_ack_timer(r.source); //TODO
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
@@ -386,7 +386,7 @@ void selective_repeat() {
                     }
                 }
                 if ((r.kind == NAK) && between(ack_expected[r.source], (r.ack + 1) % (MAX_SEQ + 1), next_frame_to_send)) {
-                    //printf("3. send, dest: %i\n", r.source);
+                    printf("3. send, dest: %i\n", r.source);
                     send_frame(DATA, (r.ack + 1) % (MAX_SEQ + 1), frame_expected, out_buf, r.source);
                 }
 
@@ -438,13 +438,13 @@ void selective_repeat() {
                         logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                         free(event.msg);
                         ack_timer_id[test] = -1; // It is no longer running TODO
-                        //printf("4. send, %i, test: %i\n", r.info.globalSource, test);
-                        send_frame(ACK, 0, frame_expected, out_buf, r.info.globalSource);        /* ack timer expired; send ack */
+                        printf("4. send, %i, test: %i\n", r.info.globalSource, test);
+                        send_frame(ACK, 0, frame_expected, out_buf, test);        /* ack timer expired; send ack */
                     } else {
                         int timed_out_seq_nr = atoi((char *) event.msg);
                         printf("Event msg: %s\n", (char *) event.msg);
                         logLine(debug, "Timeout for frame - need to resend frame %d\n", timed_out_seq_nr);
-                        //printf("5. send, %i, test: %i\n", r.info.globalSource, test);
+                        printf("5. send, %i, test: %i\n", r.info.globalSource, test);
                         send_frame(DATA, timed_out_seq_nr, frame_expected, out_buf, test);
                     }
                 }
