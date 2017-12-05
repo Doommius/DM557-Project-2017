@@ -12,7 +12,6 @@
 #define RDT_H_
 
 
-
 #define FRAME_TIMER_TIMEOUT_MILLIS  250
 #define ACT_TIMER_TIMEOUT_MILLIS     50
 
