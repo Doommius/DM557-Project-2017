@@ -103,6 +103,14 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  * returns appropriate errorcode or 0 if successfull
  */
 int disconnect(int connection_id) {
+    Lock(transport_layer_lock);
+    tpdu_t *data = malloc(sizeof(tpdu_t));
+    data->type = clear_conf;
+    data->destport = connections[connection_id].remote_address;
+    EnqueueFQ(NewFQE(data),queue_TtoN);
+    signal_link_layer_if_allowed(DATA_FOR_NETWORK_LAYER,NULL);
+    Unlock(transport_layer_lock);
+    return 0;
 
 }
 
