@@ -39,7 +39,7 @@ int listen(transport_address local_address) {
     long int events_we_handle = DATA_FOR_TRANSPORT_LAYER; //probably not, should be changed.
 
     while (true) {
-        //TODO: do so it also waits for timeout.
+        //TODO: do so it also waits for timeout. -Mark
         Wait(&event, events_we_handle);
 
         switch (event.type) {
@@ -78,8 +78,8 @@ int listen(transport_address local_address) {
  * Returns the connection id - or an appropriate error code
  *
  *
- * TODO: We may get issues due to using Connection ID as index in our connections array.
- * TODO: this could be fixed by using connection id modulo lenght of the buffer?
+ * TODO: We may get issues due to using Connection ID as index in our connections array. -Mark
+ * TODO: this could be fixed by using connection id modulo lenght of the buffer? -Mark
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
 
@@ -100,7 +100,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 Signal(DATA_FOR_NETWORK_LAYER, NULL);
                 Unlock(transport_layer_lock);
 
-                //TODO check if we get reply if no, return error.
+                //TODO check if we get reply if no, return error. -Mark
 
                 connections[connection].state = established;
                 connections[connection].local_address = local_ta;
@@ -129,9 +129,9 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  * Disconnect the connection with the supplied id.
  * returns appropriate errorcode or 0 if successfull
  *
- * TODO; Do we need to clear the element from the connections array,
- * TODO; I'm thinking it'll be overwritten in the next iteration due to modulo calculation?
- * TODO: Do we need to wait for reply from connection we are killing?
+ * TODO; Do we need to clear the element from the connections array, -Mark
+ * TODO; I'm thinking it'll be overwritten in the next iteration due to modulo calculation? -Mark
+ * TODO: Do we need to wait for reply from connection we are killing? -Mark
  */
 int disconnect(int connection_id) {
     Lock(transport_layer_lock);
@@ -139,7 +139,7 @@ int disconnect(int connection_id) {
 
     connections[connection_id].state = disconn;
 
-    data->type = clear_conf; //TODO maybe make custom type?
+    data->type = clear_conf; //TODO maybe make custom type? -Mark
     data->destport = connections[connection_id].remote_address;
     EnqueueFQ(NewFQE(data), queue_TtoN);
     signal_link_layer_if_allowed(DATA_FOR_NETWORK_LAYER, NULL);
