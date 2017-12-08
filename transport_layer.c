@@ -65,25 +65,6 @@ int listen(transport_address local_address) {
                     }
                 }
                 break;
-        if((int)event.msg ==  get_ThisStation()){
-            Lock(transport_layer_lock);
-            e = DequeueFQ(queue_NtoT);
-            if(!e){
-                printf("Error with queue");
-            } else {
-                memcpy(packet, ValueOfFQE(e),sizeof(packet));
-                free(ValueOfFQE( e ));
-                DeleteFQ(e);
-                if(packet->bytes){
-                    printf("connection accepted");
-                    Unlock(transport_layer_lock);
-                    return 0;
-                } else {
-                    printf("connection failed.");
-                    Unlock(transport_layer_lock);
-                    return -1;
-                }
-            }
         }
     }
 }
