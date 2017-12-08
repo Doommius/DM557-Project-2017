@@ -28,30 +28,30 @@ connection connections[NUM_CONNECTIONS];
  * Blocks while waiting
  */
 int listen(transport_address local_address) {
-    tpdu* packet;
+    tpdu *packet;
     event_t event;
     FifoQueue from_queue;                /* Queue for data from network layer */
     FifoQueueEntry e;
-    char* data;
+    char *data;
     Lock(network_layer_lock);
     from_queue = (FifoQueue) get_queue_NtoT();
 
     long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
-    while(true){
+    while (true) {
         //TODO: do so it also waits for timeout.
         Wait(&event, events_we_handle);
 
-        if((int)event.msg ==  get_ThisStation()){
+        if ((int) event.msg == get_ThisStation()) {
             Lock(transport_layer_lock);
             e = DequeueFQ(queue_NtoT);
-            if(!e){
+            if (!e) {
                 printf("Error with queue");
             } else {
                 memcpy(packet, ValueOfFQE(e),sizeof(packet));
                 free(ValueOfFQE( e ));
                 DeleteFQ(e);
-                if(packet->bytes){
+                if (packet->bytes) {
                     printf("connection accepted");
                     Unlock(transport_layer_lock);
                     return 0;
@@ -86,21 +86,21 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
     data->destport = remote_ta;
     data->dest = remote_host;
 
-    EnqueueFQ(NewFQE(data),queue_TtoN);
+    EnqueueFQ(NewFQE(data), queue_TtoN);
     Signal(DATA_FOR_NETWORK_LAYER, NULL);
     Unlock(transport_layer_lock);
 
-    if(listen(local_ta)) {
+    if (listen(local_ta)) {
         for (int connection = 0; connection < NUM_CONNECTIONS; ++connection) {
-            if(connections[connection].state == disconn) {
-                connections[connectionid].state = established;
-                connections[connectionid].local_address = local_ta;
-                connections[connectionid].remote_address = remote_ta;
-                connections[connectionid].remote_host = remote_host;
-                connections[connectionid].id = connection;
+            if (connections[connection].state == disconn) {
+                connections[connection].state = established;
+                connections[connection].local_address = local_ta;
+                connections[connection].remote_address = remote_ta;
+                connections[connection].remote_host = remote_host;
+                connections[connection].id = connection;
                 printf("Connection Established");
                 //TODO Load all the informaton about the connection into some kind of data structure.
-                return connectionid;
+                return connection;
             }
         }
         printf("Too many current connections.\n");
@@ -127,8 +127,8 @@ int disconnect(int connection_id) {
 
     data->type = clear_conf; //TODO maybe make custom type?
     data->destport = connections[connection_id].remote_address;
-    EnqueueFQ(NewFQE(data),queue_TtoN);
-    signal_link_layer_if_allowed(DATA_FOR_NETWORK_LAYER,NULL);
+    EnqueueFQ(NewFQE(data), queue_TtoN);
+    signal_link_layer_if_allowed(DATA_FOR_NETWORK_LAYER, NULL);
     Unlock(transport_layer_lock);
     return 0;
 
@@ -140,11 +140,11 @@ int disconnect(int connection_id) {
  */
 int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize) {
 
-    Wait(&event,DATA_FOR_APPLICATION_LAYER);
+    Wait(&event, DATA_FOR_APPLICATION_LAYER);
 
     packet *p;
 
-    p = DequeueFQ(get_queue_NtoT)->val;
+    p = DequeueFQ( get_queue_NtoT)->val;
 
     buf = (malloc(8 * sizeof(unsigned char *)));
     buf = p->data;
