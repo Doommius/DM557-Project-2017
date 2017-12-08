@@ -66,7 +66,6 @@ static boolean between(seq_nr a, seq_nr b, seq_nr c) {
     // z = b less c and c less a
     // if c is the middle number
     boolean z = ((b < c) && (c < a));
-    // TODO Omskriv så det er til at fatte! tried - Mark Jervelund
 
     logLine(debug, "a==%d, b=%d, c=%d, x=%d, y=%d, z=%d\n", a, b, c, x, y, z);
 
@@ -371,7 +370,7 @@ void selective_repeat() {
                         send_frame(NAK, 0, frame_expected, out_buf, r.source);
                     } else {
                         //printf("1. starting ack timer for: %i\n", r.source);
-                        start_ack_timer(r.source); //TODO
+                        start_ack_timer(r.source);
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
                         /* Frames may be accepted in any order. */
@@ -386,7 +385,7 @@ void selective_repeat() {
                             inc(frame_expected);        /* advance lower edge of receiver's window */
                             inc(too_far);        /* advance upper edge of receiver's window */
                             printf("2. starting ack timer for: %i\n", r.source);
-                            start_ack_timer(r.source);        /* to see if (a separate ack is needed */ //TODO
+                            start_ack_timer(r.source);        /* to see if (a separate ack is needed */
                         }
                     }
                 }
@@ -439,10 +438,10 @@ void selective_repeat() {
                 printf("Timer ID: %i, ack_timer_id: %i, r.dest: %i, test: %i, ack_timer_id (test): %i, r.info.globalsource: %i\n", timer_id, ack_timer_id[r.dest], r.dest, test, ack_timer_id[test], r.info.globalSource);
 
                 if(test != -1) {
-                    if (timer_id == ack_timer_id[test]) { // Ack timer timer out TODO
+                    if (timer_id == ack_timer_id[test]) { // Ack timer timer out
                         logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                         free(event.msg);
-                        ack_timer_id[test] = -1; // It is no longer running TODO
+                        ack_timer_id[test] = -1; // It is no longer running
                         printf("4. send, %i, test: %i\n", r.info.globalSource, test);
                         send_frame(ACK, 0, frame_expected, out_buf, test);        /* ack timer expired; send ack */
                     } else {
