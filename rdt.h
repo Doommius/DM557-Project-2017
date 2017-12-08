@@ -6,6 +6,7 @@
  */
 
 #include "fifoqueue.h"
+#include "transport_layer.h"
 
 
 #ifndef RDT_H_
@@ -38,11 +39,11 @@ typedef unsigned int seq_nr;        /* sequence or ack numbers */
 
 
 typedef struct {
-    char data[MAX_PKT];
+    tpdu data;
 
     int source;
     int dest;
-} packet;        /* packet definition */
+} segment;        /* segment definition */
 
 
 
@@ -51,7 +52,7 @@ typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind defin
 
 
 typedef struct {                        /* datagrams are transported in this layer */
-    packet data;   /* Data from the transport layer segment  */
+    segment data;   /* Data from the transport layer segment  */
     datagram_kind kind;                   /* what kind of a datagram is it? */
     int from;                                                /* From station address */
     int to;                                                /* To station address */
@@ -68,7 +69,7 @@ typedef struct {        /* frames are transported in this layer */
     frame_kind kind;        /* what kind of a frame is it? */
     seq_nr seq;           /* sequence number */
     seq_nr ack;           /* acknowledgement number */
-    datagram info;          /* the network layer packet */
+    datagram info;          /* the network layer segment */
     int sendTime;
     int recvTime;
 

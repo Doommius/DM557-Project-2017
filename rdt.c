@@ -132,7 +132,7 @@ void FakeTransportLayer1(){
     event_t event;
     long int events_we_handle;
     FifoQueueEntry e;
-    packet *p;
+    segment *p;
 
     FifoQueue from_queue;                /* Queue for data from network layer */
     FifoQueue for_queue;    /* Queue for data for the network layer */
@@ -142,7 +142,7 @@ void FakeTransportLayer1(){
 
     // Setup some messages
     for (i = 0; i < MESSAGES; i++) {
-        p = (packet *) malloc(sizeof(packet));
+        p = (segment *) malloc(sizeof(segment));
         buffer = (char *) malloc(sizeof(char) * MAX_PKT);
         sprintf(buffer, "D: %d", i);
 
@@ -175,7 +175,7 @@ void FakeTransportLayer1(){
                 Lock(network_layer_lock);
 
                 e = DequeueFQ(from_queue);
-                packet *p2;
+                segment *p2;
 
                 p2 = e->val;
 
@@ -227,7 +227,7 @@ void FakeTransportLayer2(){
                 printf("Er queue tom? %i\n", EmptyFQ(from_queue));
                 e = DequeueFQ(from_queue);
 
-                packet *p;
+                segment *p;
 
                 p = e->val;
 
@@ -241,7 +241,7 @@ void FakeTransportLayer2(){
 
                     p->dest = 1;
 
-                    printf("Queuer packet tilbage med source: %i, dest: %i\n", p->source, p->dest);
+                    printf("Queuer segment tilbage med source: %i, dest: %i\n", p->source, p->dest);
                     EnqueueFQ(NewFQE((void *) p), for_queue);
                     Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
                 }
@@ -346,7 +346,7 @@ void selective_repeat() {
                     nbuffered = nbuffered + 1;        /* expand the window */
 
                     from_network_layer(&out_buf[next_frame_to_send % NR_BUFS], from_network_layer_queue,
-                                       network_layer_lock); /* fetch new packet */
+                                       network_layer_lock); /* fetch new segment */
 
                     dest = out_buf[next_frame_to_send % NR_BUFS].to;
                     network_layer_enabled[dest] = false;

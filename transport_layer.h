@@ -7,7 +7,6 @@
 
 
 #include "subnetsupport.h"
-#include "network_layer.h"
 
 #define TPDU_PAYLOAD_SIZE 128
 

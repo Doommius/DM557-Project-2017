@@ -28,7 +28,7 @@ extern log_type            LogStyle;     /* hvordan skal systemet føre log? */
  */
 inline void transfer_frame(BufStr buffer)
 {
-  char msg[] =  "inbuffer overflow, packet dumped.\n";
+  char msg[] =  "inbuffer overflow, segment dumped.\n";
   FifoQueueEntry fqe = NewFQE( (void *)buffer );
 
   /* inddatakøen låses */

@@ -189,8 +189,8 @@ void network_layer_main_loop() {
 
                     printf("Got message for us, sending to transport layer. Message: %s\n", d2->data.data);
                     /*
-                    packet *p2;
-                    p2 = (packet *) malloc(sizeof(packet));
+                    segment *p2;
+                    p2 = (segment *) malloc(sizeof(segment));
                     p2->source = d2->globalSource;
                     p2->dest = d2->globalDest;
                     */
@@ -222,9 +222,9 @@ void network_layer_main_loop() {
                 for_queue = (FifoQueue) get_queue_TtoN();
 
                 datagram *d;
-                packet *p;
+                segment *p;
 
-                p = (packet *) malloc(sizeof(packet));
+                p = (segment *) malloc(sizeof(segment));
 
                 d = (datagram *) malloc(sizeof(datagram));
 
@@ -232,7 +232,7 @@ void network_layer_main_loop() {
                 dequeuePacket(p, for_queue);
 
 
-                //printf("dequeuet packet, fra: %i, til %i, msg: %s\n", p->source, p->dest, p->data);
+                //printf("dequeuet segment, fra: %i, til %i, msg: %s\n", p->source, p->dest, p->data);
 
 
 
@@ -283,7 +283,7 @@ void datagram_to_string(datagram *d, char *buffer){
 }
 
 
-void packet_to_string(packet *data, char *buffer) {
+void packet_to_string(segment *data, char *buffer) {
     strncpy(buffer, (char *) data->data, MAX_PKT);
     buffer[MAX_PKT] = '\0';
 }
@@ -363,11 +363,11 @@ FifoQueue *get_queue_TtoN() {
     return (FifoQueue *) queue_TtoN;
 }
 
-void dequeuePacket(packet *p, FifoQueue queue){
+void dequeuePacket(segment *p, FifoQueue queue){
 
     FifoQueueEntry e;
     e = DequeueFQ(queue);
-    memcpy(p, e->val, sizeof(packet));
+    memcpy(p, e->val, sizeof(segment));
     DeleteFQE(e);
 }
 
@@ -385,10 +385,10 @@ void dequeueData(datagram *d, FifoQueue queue){
 
 }
 
-void copyPackettoDatagram(datagram *d, packet *p){
-    packet *p2;
-    p2 = malloc(sizeof(packet));
-    memcpy(p2, p, sizeof(packet));
+void copyPackettoDatagram(datagram *d, segment *p){
+    segment *p2;
+    p2 = malloc(sizeof(segment));
+    memcpy(p2, p, sizeof(segment));
     d->data = *p2;
     //free(p);
 }

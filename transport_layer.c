@@ -42,25 +42,29 @@ int listen(transport_address local_address) {
         //TODO: do so it also waits for timeout.
         Wait(&event, events_we_handle);
 
-        if((int)event.msg ==  get_ThisStation()){
-            Lock(transport_layer_lock);
-            e = DequeueFQ(queue_NtoT);
-            if(!e){
-                printf("Error with queue");
-            }else{
-                memcpy(packet, ValueOfFQE(e),sizeof(packet));
-                free(ValueOfFQE( e ));
-                DeleteFQ(e);
-                if(packet->bytes){
-                    printf("connection accepted");
-                    Unlock(transport_layer_lock);
-                    return 0;
-                }else{
-                    printf("connection failed.");
-                    Unlock(transport_layer_lock);
-                    return -1;
+        switch (event.type) {
+            case DATA_FOR_TRANSPORT_LAYER:
+                if ((int) event.msg == get_ThisStation()) {
+                    Lock(transport_layer_lock);
+                    e = DequeueFQ(queue_NtoT);
+                    if (!e) {
+                        printf("Error with queue");
+                    } else {
+                        memcpy(packet, ValueOfFQE(e), sizeof(packet));
+                        free(ValueOfFQE(e));
+                        DeleteFQ(e);
+                        if (packet->bytes) {
+                            printf("connection accepted");
+                            Unlock(transport_layer_lock);
+                            return 0;
+                        } else {
+                            printf("connection failed.");
+                            Unlock(transport_layer_lock);
+                            return -1;
+                        }
+                    }
                 }
-            }
+                break;
         }
     }
 }
@@ -144,7 +148,7 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
 
     Wait(&event,DATA_FOR_APPLICATION_LAYER);
 
-    packet *p;
+    segment *p;
 
     p = DequeueFQ(get_queue_NtoT)->val;
 
@@ -167,6 +171,12 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
  * Main loop of the transport layer, handling the relevant events, fx. data arriving from the network layer.
  * And take care of the different types of packages that can be received
  */
-void transport_layer_loop(void);
+void transport_layer_loop(void){
+    transport_layer_lock = malloc(sizeof(mlock_t));
+    Init_lock(transport_layer_lock);
+
+    long int events_we_handle;
+    events_we_handle =
+}
 
 
