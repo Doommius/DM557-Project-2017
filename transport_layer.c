@@ -36,7 +36,7 @@ int listen(transport_address local_address) {
     Lock(network_layer_lock);
     from_queue = (FifoQueue) get_queue_NtoT();
 
-    long int events_we_handle = DATA_FOR_TRANSPORT_LAYER;
+    long int events_we_handle = DATA_FOR_TRANSPORT_LAYER; //probably not, should be changed.
 
     while (true) {
         //TODO: do so it also waits for timeout.
@@ -172,7 +172,20 @@ void transport_layer_loop(void) {
     Init_lock(transport_layer_lock);
 
     long int events_we_handle;
-    events_we_handle =
+    events_we_handle = DATA_FOR_TRANSPORT_LAYER;
+    while (true){
+        Wait(&event, events_we_handle);
+        switch (event.type){
+            case DATA_FOR_TRANSPORT_LAYER:
+                printf("DATA FOR TRANSPORT LAYER");
+                Lock(transport_layer_lock);
+
+
+
+                Unlock(transport_layer_lock);
+                break;
+        }
+    }
 }
 
 
