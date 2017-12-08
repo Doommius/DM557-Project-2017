@@ -75,6 +75,7 @@ int listen(transport_address local_address) {
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
 
+
     printf("Connecting to: %i, local ta: %i, remote ta; %i\n", remote_host, local_ta, remote_ta);
         for (int connection = 0; connection < NUM_CONNECTIONS; ++connection) {
             if (connections[connection].state == disconn) {
@@ -82,6 +83,9 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 printf("Found empty connection\n");
                 Lock(transport_layer_lock);
                 tpdu *data = malloc(sizeof(tpdu));
+
+                segment *s;
+                s = (segment *) malloc(sizeof(segment));
 
                 data->type = call_req;
                 data->returnport = local_ta;
@@ -95,7 +99,10 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 queue = (FifoQueue) get_queue_TtoN();
 
                 //Request Connection
-                EnqueueFQ(NewFQE((void *) data), queue);
+
+                copyTPDUtoSegment(data, s);
+
+                EnqueueFQ(NewFQE((void *) s), queue);
                 Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
                 Unlock(transport_layer_lock);
 
@@ -139,12 +146,17 @@ int disconnect(int connection_id) {
     FifoQueue queue;
     queue = (FifoQueue) get_queue_TtoN();
 
+    segment *s;
+    s = (segment *) malloc(sizeof(segment));
+
     connections[connection_id].state = disconn;
 
     t->type = clear_conf; //TODO maybe make custom type? -Mark
     t->destport = connections[connection_id].remote_address;
 
-    EnqueueFQ(NewFQE( (void *) t), queue);
+    copyTPDUtoSegment(t, s);
+
+    EnqueueFQ(NewFQE( (void *) s), queue);
     Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
 
     Unlock(transport_layer_lock);
@@ -176,6 +188,8 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
     if(check_connection(connection_id)) {
 
         int num_packets;
+        segment *s;
+        s = (segment *) malloc(sizeof(segment));
 
         FifoQueue queue;
         queue = (FifoQueue) get_queue_TtoN();
@@ -203,7 +217,9 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
             printf("Message: %s\n", t->payload);
             t->dest = connection_id;
 
-            EnqueueFQ(NewFQE((void *) t), queue);
+            copyTPDUtoSegment(t, s);
+
+            EnqueueFQ(NewFQE((void *) s), queue);
 
             for (int j = 0; j < num_packets; j++) {
                 Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
@@ -233,6 +249,7 @@ void transport_layer_loop(void) {
 
     listen_queue = InitializeFQ();
     segment *s;
+    s = (segment *) malloc(sizeof(segment));
 
 
     long int events_we_handle;
@@ -265,14 +282,20 @@ void transport_layer_loop(void) {
 
                             //Send reply back
                             t->type = call_rep;
-                            EnqueueFQ(NewFQE((void *) t), for_queue);
+
+                            copyTPDUtoSegment(t, s);
+
+                            EnqueueFQ(NewFQE((void *) s), for_queue);
                             Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
 
                         } else {
                             printf("Port bad: %i\n", t->destport);
                             t->type = call_rep;
                             t->destport = -1;
-                            EnqueueFQ(NewFQE((void *) t), for_queue);
+
+                            copyTPDUtoSegment(t, s);
+
+                            EnqueueFQ(NewFQE((void *) s), for_queue);
                             Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
                         }
                         break;
@@ -321,4 +344,12 @@ int check_ports(transport_address port){
     return 1;
 }
 
+void copyTPDUtoSegment(tpdu *t, segment *s){
+    tpdu *t2;
+    t2 = malloc(sizeof(tpdu));
+    memcpy(t2, t, sizeof(tpdu));
+    s->data = *t2;
+    s->dest = t->dest;
+    s->source = get_ThisStation();
+}
 

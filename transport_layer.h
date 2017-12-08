@@ -7,6 +7,7 @@
 
 
 #include "subnetsupport.h"
+#include "rdt.h"
 
 #define TPDU_PAYLOAD_SIZE 128
 
@@ -120,5 +121,7 @@ int check_connection(int connection_id);
 
 //Check if port is available
 int check_ports(transport_address port);
+
+void copyTPDUtoSegment(tpdu *t, segment *s);
 
 #endif /* __TRANSPORT_LAYER_H__ */

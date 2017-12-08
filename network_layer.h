@@ -71,10 +71,10 @@ void init_forwardtable(forwarding_table *Table);
 
 int round_robin(int *connections);
 
-void dequeueTPDU(tpdu *p, FifoQueue queue);
+void dequeueSegment(segment *s, FifoQueue queue);
 
 void dequeueData( datagram *d, FifoQueue queue);
 
-void copyTPDUtoDatagram(datagram *d, tpdu *t);
+void copySegmenttoDatagram(datagram *d, segment *s);
 
 #endif //NETWORK_LAYER_H

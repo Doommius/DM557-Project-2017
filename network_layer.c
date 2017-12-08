@@ -190,7 +190,7 @@ void network_layer_main_loop() {
 
                 if (d2->globalDest == ThisStation ){
 
-                    printf("Got message for us, sending to transport layer. Message: %s\n", d2->data.payload);
+                    //printf("Got message for us, sending to transport layer. Message: %s\n", d2->data.data);
                     /*
                     segment *p2;
                     p2 = (segment *) malloc(sizeof(segment));
@@ -209,7 +209,7 @@ void network_layer_main_loop() {
 
                     d2->to = forward(d2->globalDest);
                     d2->from = ThisStation;
-                    printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.payload, d2->to);
+                    //printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.data.payload, d2->to);
                     EnqueueFQ(NewFQE((void *) d2), from_network_layer_queue);
                     signal_link_layer_if_allowed(d2->to, from_network_layer_queue);
                 }
@@ -228,16 +228,15 @@ void network_layer_main_loop() {
                 datagram *d;
                 segment *s;
 
-                t = (tpdu *) malloc(sizeof(tpdu));
+                s = (segment *) malloc(sizeof(segment));
 
                 d = (datagram *) malloc(sizeof(datagram));
 
 
-                dequeueTPDU(t, for_queue);
+                dequeueSegment(s, for_queue);
 
-                printf("Fik dequeuet\n");
+                printf("Fik dequeuet, message: %s\n", s->data.payload);
 
-                printf("Got message: %s, dest: %i\n", t->payload, t->dest);
 
                 //printf("dequeuet segment, fra: %i, til %i, msg: %s\n", p->source, p->dest, p->data);
 
@@ -245,7 +244,7 @@ void network_layer_main_loop() {
 
                 //d->data = p;
 
-                copyTPDUtoDatagram(d, t);
+                copySegmenttoDatagram(d, s);
 
                 d->from = ThisStation;
                 d->globalSource = ThisStation;
@@ -370,12 +369,12 @@ FifoQueue *get_queue_TtoN() {
     return (FifoQueue *) queue_TtoN;
 }
 
-void dequeueTPDU(tpdu *t, FifoQueue queue){
+void dequeueSegment(segment *s, FifoQueue queue){
 
     printf("Dequeuer\n");
     FifoQueueEntry e;
     e = DequeueFQ(queue);
-    memcpy(t, e->val, sizeof(tpdu));
+    memcpy(s, e->val, sizeof(segment));
     DeleteFQE(e);
 }
 
@@ -393,11 +392,11 @@ void dequeueData(datagram *d, FifoQueue queue){
 
 }
 
-void copyTPDUtoDatagram(datagram *d, tpdu *t){
-    tpdu *t2;
-    t2 = malloc(sizeof(tpdu));
-    memcpy(t2, t, sizeof(tpdu));
-    d->data = *t2;
+void copySegmenttoDatagram(datagram *d, segment *s){
+    segment *s2;
+    s2 = malloc(sizeof(segment));
+    memcpy(s2, s, sizeof(segment));
+    d->data = *s2;
     //free(t);
 }
 
