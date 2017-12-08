@@ -160,6 +160,11 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
  */
 int send(int connection_id, unsigned char *buf, unsigned int bytes) {
 
+    tpdu *t;
+    t = malloc(sizeof(tpdu));
+
+    strcpy(t->payload, buf);
+    printf("message: %s\n", t->payload);
 }
 
 
@@ -172,7 +177,7 @@ void transport_layer_loop(void) {
     Init_lock(transport_layer_lock);
 
     long int events_we_handle;
-    events_we_handle = DATA_FOR_TRANSPORT_LAYER;
+    events_we_handle = DATA_FOR_TRANSPORT_LAYER | DATA_FROM_APPLICATION_LAYER;
     while (true){
         Wait(&event, events_we_handle);
         switch (event.type){
@@ -183,6 +188,9 @@ void transport_layer_loop(void) {
 
 
                 Unlock(transport_layer_lock);
+                break;
+            case DATA_FROM_APPLICATION_LAYER:
+                printf("DATA FROM APPLICATION LAYER");
                 break;
         }
     }

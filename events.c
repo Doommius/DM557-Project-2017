@@ -39,6 +39,9 @@ void check_event(long int event, char* event_name){
         case DATA_FOR_APPLICATION_LAYER:
             event_name = "data_for_application_layer";
             break;
+        case DATA_FROM_APPLICATION_LAYER:
+            event_name = "data_from_application:layer";
+            break;
         default:
             event_name = "unknown";
             break;
