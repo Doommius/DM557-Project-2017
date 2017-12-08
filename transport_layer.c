@@ -179,7 +179,7 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
     FifoQueue queue;
     queue = (FifoQueue) get_queue_TtoN();
 
-    num_packets =  (bytes / TPDU_PAYLOAD_SIZE)+1;
+    num_packets = (bytes / TPDU_PAYLOAD_SIZE) + 1;
 
     printf("Number of package we need to send: %i\n", num_packets);
 
@@ -192,10 +192,10 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
         t = malloc(sizeof(tpdu));
 
         if (i < num_packets - 1) {
-            memcpy(t->payload, buf+i*TPDU_PAYLOAD_SIZE, TPDU_PAYLOAD_SIZE);
+            memcpy(t->payload, buf + i * TPDU_PAYLOAD_SIZE, TPDU_PAYLOAD_SIZE);
             t->bytes = TPDU_PAYLOAD_SIZE;
         } else {
-            memcpy(t->payload, buf+i*TPDU_PAYLOAD_SIZE, overhead);
+            memcpy(t->payload, buf + i * TPDU_PAYLOAD_SIZE, overhead);
             t->bytes = overhead;
         }
 
@@ -221,13 +221,12 @@ void transport_layer_loop(void) {
 
     long int events_we_handle;
     events_we_handle = DATA_FOR_TRANSPORT_LAYER | DATA_FROM_APPLICATION_LAYER;
-    while (true){
+    while (true) {
         Wait(&event, events_we_handle);
-        switch (event.type){
+        switch (event.type) {
             case DATA_FOR_TRANSPORT_LAYER:
                 printf("DATA FOR TRANSPORT LAYER");
                 Lock(transport_layer_lock);
-
 
 
                 Unlock(transport_layer_lock);
