@@ -37,6 +37,8 @@ typedef struct {
     char            payload[TPDU_PAYLOAD_SIZE];
 } tpdu;
 
+
+//Legacy code.
 typedef struct {
     char    vc_id;
     char    data[TPDU_SIZE];

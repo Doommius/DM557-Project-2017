@@ -121,7 +121,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  *
  * TODO; Do we need to clear the element from the connections array,
  * TODO; I'm thinking it'll be overwritten in the next iteration due to modulo calculation?
- *
+ * TODO: Do we need to wait for reply from connection we are killing?
  */
 int disconnect(int connection_id) {
     Lock(transport_layer_lock);
