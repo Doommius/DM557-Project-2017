@@ -14,6 +14,8 @@
 #include "debug.h"
 #include "events.h"
 #include "network_layer.h"
+#include "transport_layer.h"
+#include "application_layer.h"
 
 /* En macro for at lette overførslen af korrekt navn til Activate */
 #define ACTIVATE(n, f) Activate(n, f, #f)
@@ -585,9 +587,16 @@ int main(int argc, char *argv[]) {
 
 
     //Transport Layers for our hosts
-    ACTIVATE(1, FakeTransportLayer1);
-    ACTIVATE(4, FakeTransportLayer2);
+    //ACTIVATE(1, FakeTransportLayer1);
+    //ACTIVATE(4, FakeTransportLayer2);
 
+    //Start application layer
+    ACTIVATE(1, Station1_application_layer);
+    ACTIVATE(2, Station2_application_layer);
+
+    //Start transport layer
+    ACTIVATE(1, transport_layer_loop);
+    ACTIVATE(2, transport_layer_loop);
 
 
     //Network Layers for everyone

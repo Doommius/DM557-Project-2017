@@ -10,13 +10,13 @@
 #include "debug.h"
 #include "network_layer.h"
 #include "subnet.h"
-#include <immintrin.h>
-#include <stdio.h>
 #include "rdt.h"
 
 
 mlock_t *network_layer_lock;
 mlock_t *write_lock;
+
+event_t event;
 
 int connectionid; //do we even need this.
 
@@ -75,6 +75,7 @@ int listen(transport_address local_address) {
  *
  *
  * TODO: We may get issues due to using Connection ID as index in our connections array.
+ * TODO: this could be fixed by using connection id modulo lenght of the buffer?
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
     Lock(transport_layer_lock);
@@ -99,7 +100,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 connections[connectionid].id = connection;
                 printf("Connection Established");
                 //TODO Load all the informaton about the connection into some kind of data structure.
-                return connection;
+                return connectionid;
             }
         }
         printf("Too many current connections.\n");
@@ -115,7 +116,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  * returns appropriate errorcode or 0 if successfull
  *
  * TODO; Do we need to clear the element from the connections array,
- * TODO; I'm thinking it'll be overwritten in the next iteration.
+ * TODO; I'm thinking it'll be overwritten in the next iteration due to modulo calculation?
  *
  */
 int disconnect(int connection_id) {
@@ -139,6 +140,7 @@ int disconnect(int connection_id) {
  */
 int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize) {
 
+    Wait(&event,DATA_FOR_APPLICATION_LAYER);
 
     packet *p;
 
