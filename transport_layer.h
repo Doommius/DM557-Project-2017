@@ -1,4 +1,4 @@
-/
+//
 // Created by jervelund on 11/21/17.
 //
 
@@ -7,6 +7,7 @@
 
 
 #include "subnetsupport.h"
+#include "network_layer.h"
 
 #define TPDU_PAYLOAD_SIZE 128
 

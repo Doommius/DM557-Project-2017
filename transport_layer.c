@@ -10,8 +10,6 @@
 #include "debug.h"
 #include "network_layer.h"
 #include "subnet.h"
-#include <immintrin.h>
-#include <stdio.h>
 #include "rdt.h"
 
 
@@ -101,7 +99,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 connections[connectionid].id = connection;
                 printf("Connection Established");
                 //TODO Load all the informaton about the connection into some kind of data structure.
-                return connection;
+                return connectionid;
             }
         }
         printf("Too many current connections.\n");
