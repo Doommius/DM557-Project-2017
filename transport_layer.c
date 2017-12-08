@@ -82,28 +82,38 @@ int listen(transport_address local_address) {
  * TODO: this could be fixed by using connection id modulo lenght of the buffer?
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
-    Lock(transport_layer_lock);
-    tpdu *data = malloc(sizeof(tpdu));
 
-    data->type = call_req;
-    data->returnport = local_ta;
-    data->destport = remote_ta;
-    data->dest = remote_host;
-
-    EnqueueFQ(NewFQE(data), queue_TtoN);
-    Signal(DATA_FOR_NETWORK_LAYER, NULL);
-    Unlock(transport_layer_lock);
 
     if (listen(local_ta)) {
         for (int connection = 0; connection < NUM_CONNECTIONS; ++connection) {
             if (connections[connection].state == disconn) {
+
+                Lock(transport_layer_lock);
+                tpdu *data = malloc(sizeof(tpdu));
+
+                data->type = call_req;
+                data->returnport = local_ta;
+                data->destport = remote_ta;
+                data->dest = remote_host;
+
+                EnqueueFQ(NewFQE(data), queue_TtoN);
+                Signal(DATA_FOR_NETWORK_LAYER, NULL);
+                Unlock(transport_layer_lock);
+
+                //TODO check if we get reply if no, return error.
+
                 connections[connection].state = established;
                 connections[connection].local_address = local_ta;
                 connections[connection].remote_address = remote_ta;
                 connections[connection].remote_host = remote_host;
                 connections[connection].id = connection;
-                printf("Connection Established");
+
                 //TODO Load all the informaton about the connection into some kind of data structure.
+
+
+
+                printf("Connection Established");
+
                 return connection;
             }
         }
