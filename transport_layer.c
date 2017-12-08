@@ -104,7 +104,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 connections[connection].id = connection;
                 printf("Connection Established");
                 //TODO Load all the informaton about the connection into some kind of data structure.
-                return connectionid;
+                return connection;
             }
         }
         printf("Too many current connections.\n");
