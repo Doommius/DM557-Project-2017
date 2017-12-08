@@ -30,9 +30,6 @@ void check_event(long int event, char* event_name){
         case DATA_FOR_LINK_LAYER:
             event_name = "data_for_link_layer";
             break;
-        case DATA_FROM_LINK_LAYER:
-            event_name = "data_from_link_layer";
-            break;
         case DONE_SENDING:
             event_name = "done_sending";
             break;
@@ -41,6 +38,9 @@ void check_event(long int event, char* event_name){
             break;
         case DATA_FROM_APPLICATION_LAYER:
             event_name = "data_from_application:layer";
+            break;
+        case CONNECTION_REPLY:
+            event_name = "connection_reply";
             break;
         default:
             event_name = "unknown";

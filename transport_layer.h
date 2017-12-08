@@ -19,7 +19,7 @@ mlock_t *transport_layer_lock;
 
 typedef enum {
     call_req,
-    call_acc,
+    call_rep,
     tcredit,
     clear_req,
     clear_conf,
@@ -114,5 +114,11 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes);
  * And take care of the different types of packages that can be received
  */
 void transport_layer_loop(void);
+
+//Check if connection exists
+int check_connection(int connection_id);
+
+//Check if port is available
+int check_ports(transport_address port);
 
 #endif /* __TRANSPORT_LAYER_H__ */

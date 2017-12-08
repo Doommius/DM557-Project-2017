@@ -105,7 +105,7 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
     to_physical_layer(&s, dest);
 
 
-    printf("Sending frame from: %i, to %i\n", ThisStation, dest);
+    printf("Sending frame from: %i, to %i, with gD: %i, gS: %i\n", ThisStation, dest, s.info.globalDest, s.info.globalSource);
 
     if (fk == DATA) {
         start_timer(frame_nr, dest);
@@ -361,7 +361,7 @@ void selective_repeat() {
                 //Lock(write_lock);
                 printf("FRAME_ARRIVAL\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
-                printf("    Frame from %i, to %i, message: %s\n", r.source, r.dest, r.info.data.data);
+                printf("    Frame from %i, to %i, globaldest: %i, globalsource: %i, message: %s\n", r.source, r.dest, r.info.globalDest, r.info.globalSource, r.info.data.payload);
                 if (r.kind == DATA) {
                     printf("Got DATA\n");
                     /* An undamaged frame has arrived. */
@@ -497,6 +497,7 @@ int from_physical_layer(frame *r) {
 
 void to_physical_layer(frame *r, int dest) {
 
+    printf("physical layer, gd: %i\n", r->info.globalDest);
     ToSubnet(ThisStation, dest, (char *) r, sizeof(frame));
     //printf("After ToSubnet\n");
     print_frame(r, "sending");
@@ -589,14 +590,13 @@ int main(int argc, char *argv[]) {
     //ACTIVATE(1, FakeTransportLayer1);
     //ACTIVATE(4, FakeTransportLayer2);
 
-    //Start application layer
-    ACTIVATE(1, Station1_application_layer);
-    ACTIVATE(2, Station2_application_layer);
 
-    //Start transport layer
-    ACTIVATE(1, transport_layer_loop);
-    ACTIVATE(2, transport_layer_loop);
 
+    //Selective Repeat for everyone
+    ACTIVATE(1, selective_repeat);
+    ACTIVATE(2, selective_repeat);
+    ACTIVATE(3, selective_repeat);
+    ACTIVATE(4, selective_repeat);
 
     //Network Layers for everyone
     ACTIVATE(1, FakeNetworkLayer);
@@ -604,16 +604,21 @@ int main(int argc, char *argv[]) {
     ACTIVATE(3, FakeNetworkLayer);
     ACTIVATE(4, FakeNetworkLayer);
 
+    //Start transport layer
+    ACTIVATE(1, transport_layer_loop);
+    ACTIVATE(2, transport_layer_loop);
+
+    //Start application layer
+    ACTIVATE(1, Station1_application_layer);
+    ACTIVATE(2, Station2_application_layer);
+
+
+
+
 
     //Aner ikke hvad jeg laver:
     //ACTIVATE(2, initialize_locks_and_queues);
     //ACTIVATE(3, initialize_locks_and_queues);
-
-    //Selective Repeat for everyone
-    ACTIVATE(1, selective_repeat);
-    ACTIVATE(2, selective_repeat);
-    ACTIVATE(3, selective_repeat);
-    ACTIVATE(4, selective_repeat);
 
 
     /* simuleringen starter */

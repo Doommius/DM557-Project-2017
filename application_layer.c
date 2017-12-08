@@ -5,8 +5,8 @@
 #include "application_layer.h"
 
 void Station1_application_layer(void) {
-    //connect(2, 20, 20);
-    send(2, "Hello world", 12);
+    connect(2, 20, 20);
+    //send(2, "Hello world", 12);
     sleep(5);
     Stop();
 }

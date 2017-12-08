@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "events.h"
 #include "network_layer.h"
+#include "transport_layer.h"
 
 
 FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
@@ -185,9 +186,11 @@ void network_layer_main_loop() {
                     break;
                 }
 
+                printf("GLOBALDESTINATION: %i\n", d2->globalDest);
+
                 if (d2->globalDest == ThisStation ){
 
-                    printf("Got message for us, sending to transport layer. Message: %s\n", d2->data.data);
+                    printf("Got message for us, sending to transport layer. Message: %s\n", d2->data.payload);
                     /*
                     segment *p2;
                     p2 = (segment *) malloc(sizeof(segment));
@@ -206,7 +209,7 @@ void network_layer_main_loop() {
 
                     d2->to = forward(d2->globalDest);
                     d2->from = ThisStation;
-                    printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.data, d2->to);
+                    printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.payload, d2->to);
                     EnqueueFQ(NewFQE((void *) d2), from_network_layer_queue);
                     signal_link_layer_if_allowed(d2->to, from_network_layer_queue);
                 }
@@ -221,16 +224,20 @@ void network_layer_main_loop() {
                 Lock(network_layer_lock);
                 for_queue = (FifoQueue) get_queue_TtoN();
 
+                printf("Is queue empty? %i\n", EmptyFQ(for_queue));
                 datagram *d;
-                segment *p;
+                segment *s;
 
-                p = (segment *) malloc(sizeof(segment));
+                t = (tpdu *) malloc(sizeof(tpdu));
 
                 d = (datagram *) malloc(sizeof(datagram));
 
 
-                dequeuePacket(p, for_queue);
+                dequeueTPDU(t, for_queue);
 
+                printf("Fik dequeuet\n");
+
+                printf("Got message: %s, dest: %i\n", t->payload, t->dest);
 
                 //printf("dequeuet segment, fra: %i, til %i, msg: %s\n", p->source, p->dest, p->data);
 
@@ -238,15 +245,15 @@ void network_layer_main_loop() {
 
                 //d->data = p;
 
-                copyPackettoDatagram(d, p);
+                copyTPDUtoDatagram(d, t);
+
                 d->from = ThisStation;
                 d->globalSource = ThisStation;
                 d->globalDest = d->data.dest;
                 d->to = forward(d->data.dest);
-                printf("Sending from: %i, to: %i, msg: %s\n", ThisStation, d->to, d->data.data);
+                //printf("Sending from: %i, to: %i, msg: %s\n", ThisStation, d->to, d->data.payload);
 
-                //printf("Sending datagram to link layer, with source: %i, destination: %i, and message: %s, through: %i\n", d->from, d->globalDest, d->msg, d->to);
-
+                printf("Queueing datagram with globaldest: %i, globalsource: %i\n", d->globalDest, d->globalSource);
                 EnqueueFQ(NewFQE((void *) d), from_network_layer_queue);
                 signal_link_layer_if_allowed(d->to, from_network_layer_queue);
                 Unlock(network_layer_lock);
@@ -363,11 +370,12 @@ FifoQueue *get_queue_TtoN() {
     return (FifoQueue *) queue_TtoN;
 }
 
-void dequeuePacket(segment *p, FifoQueue queue){
+void dequeueTPDU(tpdu *t, FifoQueue queue){
 
+    printf("Dequeuer\n");
     FifoQueueEntry e;
     e = DequeueFQ(queue);
-    memcpy(p, e->val, sizeof(segment));
+    memcpy(t, e->val, sizeof(tpdu));
     DeleteFQE(e);
 }
 
@@ -385,12 +393,12 @@ void dequeueData(datagram *d, FifoQueue queue){
 
 }
 
-void copyPackettoDatagram(datagram *d, segment *p){
-    segment *p2;
-    p2 = malloc(sizeof(segment));
-    memcpy(p2, p, sizeof(segment));
-    d->data = *p2;
-    //free(p);
+void copyTPDUtoDatagram(datagram *d, tpdu *t){
+    tpdu *t2;
+    t2 = malloc(sizeof(tpdu));
+    memcpy(t2, t, sizeof(tpdu));
+    d->data = *t2;
+    //free(t);
 }
 
 
