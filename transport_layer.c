@@ -65,6 +65,25 @@ int listen(transport_address local_address) {
                     }
                 }
                 break;
+        if((int)event.msg ==  get_ThisStation()){
+            Lock(transport_layer_lock);
+            e = DequeueFQ(queue_NtoT);
+            if(!e){
+                printf("Error with queue");
+            } else {
+                memcpy(packet, ValueOfFQE(e),sizeof(packet));
+                free(ValueOfFQE( e ));
+                DeleteFQ(e);
+                if(packet->bytes){
+                    printf("connection accepted");
+                    Unlock(transport_layer_lock);
+                    return 0;
+                } else {
+                    printf("connection failed.");
+                    Unlock(transport_layer_lock);
+                    return -1;
+                }
+            }
         }
     }
 }
@@ -131,6 +150,9 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
 int disconnect(int connection_id) {
     Lock(transport_layer_lock);
     tpdu *data = malloc(sizeof(tpdu));
+
+    connections[connection_id].state = disconn;
+
     data->type = clear_conf; //TODO maybe make custom type?
     data->destport = connections[connection_id].remote_address;
     EnqueueFQ(NewFQE(data),queue_TtoN);
@@ -160,7 +182,7 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
 
 /*
  * On connection specified, send the bytes amount of data from buf.
- * Must break the message down into chunks of a manageble size, and queue them up.
+ * Must break the message down into chunks of a manageable size, and queue them up.
  */
 int send(int connection_id, unsigned char *buf, unsigned int bytes) {
 
