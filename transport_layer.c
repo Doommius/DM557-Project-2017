@@ -146,12 +146,10 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
 
     Wait(&event, DATA_FOR_APPLICATION_LAYER);
 
-    segment *p;
+    segment *segment;
 
-    p = DequeueFQ( get_queue_NtoT)->val;
-
-    buf = (malloc(8 * sizeof(unsigned char *)));
-    buf = p->data;
+    segment = DequeueFQ(get_queue_NtoT)->val;
+    memcpy(buf, segment->data.payload, bufsize);
     //dequeue from network to transport queue.
 
 }
@@ -169,7 +167,7 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
  * Main loop of the transport layer, handling the relevant events, fx. data arriving from the network layer.
  * And take care of the different types of packages that can be received
  */
-void transport_layer_loop(void){
+void transport_layer_loop(void) {
     transport_layer_lock = malloc(sizeof(mlock_t));
     Init_lock(transport_layer_lock);
 

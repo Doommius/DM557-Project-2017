@@ -40,7 +40,6 @@ typedef unsigned int seq_nr;        /* sequence or ack numbers */
 
 typedef struct {
     tpdu data;
-
     int source;
     int dest;
 } segment;        /* segment definition */
