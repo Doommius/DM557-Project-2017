@@ -75,6 +75,7 @@ int listen(transport_address local_address) {
  *
  *
  * TODO: We may get issues due to using Connection ID as index in our connections array.
+ * TODO: this could be fixed by using connection id modulo lenght of the buffer?
  */
 int connect(host_address remote_host, transport_address local_ta, transport_address remote_ta) {
     Lock(transport_layer_lock);
@@ -120,7 +121,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  * returns appropriate errorcode or 0 if successfull
  *
  * TODO; Do we need to clear the element from the connections array,
- * TODO; I'm thinking it'll be overwritten in the next iteration.
+ * TODO; I'm thinking it'll be overwritten in the next iteration due to modulo calculation?
  *
  */
 int disconnect(int connection_id) {
