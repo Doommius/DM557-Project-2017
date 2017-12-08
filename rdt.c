@@ -146,7 +146,7 @@ void FakeTransportLayer1(){
         buffer = (char *) malloc(sizeof(char) * MAX_PKT);
         sprintf(buffer, "D: %d", i);
 
-        strcpy(p->data, buffer);
+        //strcpy(p->data, buffer);
 
         p->source = ThisStation;
 
@@ -236,7 +236,7 @@ void FakeTransportLayer2(){
                 logLine(succes, "Received message: %s\n", p->data);
 
                 if (j < MESSAGES) {
-                    ((char *) p->data)[0] = 'd';
+                    //((char *) p->data)[0] = 'd';
                     p->source = ThisStation;
 
                     p->dest = 1;

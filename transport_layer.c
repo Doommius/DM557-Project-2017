@@ -159,12 +159,40 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
  * Must break the message down into chunks of a manageable size, and queue them up.
  */
 int send(int connection_id, unsigned char *buf, unsigned int bytes) {
+    int num_packets;
 
-    tpdu *t;
-    t = malloc(sizeof(tpdu));
+    FifoQueue queue;
+    queue = (FifoQueue) get_queue_TtoN();
 
-    strcpy(t->payload, buf);
-    printf("message: %s\n", t->payload);
+    num_packets =  (bytes / TPDU_PAYLOAD_SIZE)+1;
+
+    printf("Number of package we need to send: %i\n", num_packets);
+
+    int overhead;
+    overhead = (bytes % TPDU_PAYLOAD_SIZE);
+
+    for (int i = 0; i < num_packets; i++) {
+
+        tpdu *t;
+        t = malloc(sizeof(tpdu));
+
+        if (i < num_packets - 1) {
+            memcpy(t->payload, buf+i*TPDU_PAYLOAD_SIZE, TPDU_PAYLOAD_SIZE);
+            t->bytes = TPDU_PAYLOAD_SIZE;
+        } else {
+            memcpy(t->payload, buf+i*TPDU_PAYLOAD_SIZE, overhead);
+            t->bytes = overhead;
+        }
+
+        printf("Message: %s\n", t->payload);
+        t->dest = connection_id;
+
+        EnqueueFQ(NewFQE((void *) t), queue);
+
+        for (int j = 0; j < num_packets; j++) {
+            Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
+        }
+    }
 }
 
 

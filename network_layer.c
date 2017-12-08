@@ -278,13 +278,13 @@ void signal_link_layer_if_allowed(int address, FifoQueue queue) {
 }
 
 void datagram_to_string(datagram *d, char *buffer){
-    strncpy(buffer, (char *) d->data.data, MAX_PKT);
+    //strncpy(buffer, (char *) d->data.data, MAX_PKT);
     buffer[MAX_PKT] = '\0';
 }
 
 
 void packet_to_string(segment *data, char *buffer) {
-    strncpy(buffer, (char *) data->data, MAX_PKT);
+    //strncpy(buffer, (char *) data->data, MAX_PKT);
     buffer[MAX_PKT] = '\0';
 }
 
