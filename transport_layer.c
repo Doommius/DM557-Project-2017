@@ -53,6 +53,7 @@ int listen(transport_address local_address) {
                         memcpy(packet, ValueOfFQE(e), sizeof(packet));
                         free(ValueOfFQE(e));
                         DeleteFQ(e);
+                        //TODO We need to reply with connection accepted.
                         if (packet->bytes) {
                             printf("connection accepted");
                             Unlock(transport_layer_lock);
