@@ -66,6 +66,10 @@ int listen(transport_address local_address) {
                     }
                 }
                 break;
+            default:
+                printf(event.type);
+                printf("error listen doesnt handle this case");
+                break;
         }
     }
 }
