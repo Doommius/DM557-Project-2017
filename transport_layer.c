@@ -10,7 +10,6 @@
 #include "debug.h"
 #include "network_layer.h"
 #include "subnet.h"
-#include "rdt.h"
 
 
 mlock_t *network_layer_lock;

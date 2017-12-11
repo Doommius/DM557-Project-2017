@@ -7,73 +7,10 @@
 
 
 #include "subnetsupport.h"
-#include "rdt.h"
-
-#define TPDU_PAYLOAD_SIZE 128
-
-#define TPDU_SIZE 8
-
-#define NUM_CONNECTIONS 4
+#include "structs.h"
 
 mlock_t *transport_layer_lock;
 
-
-typedef enum {
-    call_req,
-    call_rep,
-    tcredit,
-    clear_req,
-    clear_conf,
-    data_tpdu
-} tpdu_type;
-
-typedef struct {
-    int             destport;
-    int             returnport;
-    char            m;   //What is m and q?
-    char            q;
-    unsigned int    dest;
-    tpdu_type       type;
-    unsigned int    bytes;
-    char            payload[TPDU_PAYLOAD_SIZE];
-} tpdu;
-
-
-//Legacy code.
-typedef struct {
-    char    vc_id;
-    char    data[TPDU_SIZE];
-} transport_packet;
-
-typedef enum {
-    disconn,
-    receiving,
-    established,
-    sending,
-    idle,
-    waiting,
-    queued
-} connection_state;
-
-/* Similar to port numbers when working with sockets */
-typedef int transport_address;
-
-/* You may already have this in the NL  */
-typedef unsigned int host_address;
-
-
-typedef struct {
-    transport_address   local_address;
-    transport_address   remote_address;
-    connection_state    state;
-    host_address        remote_host;
-    long                timer;
-    unsigned char      *user_buf_addr;
-    int                 id;
-    unsigned int        byte_count;
-    unsigned int        clr_req_received;
-    unsigned int        credits;
-} connection;
 
 /*
  * Listen for incomming calls on the specified transport_address.

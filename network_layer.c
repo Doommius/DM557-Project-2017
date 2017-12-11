@@ -6,13 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "rdt.h"
 #include "subnetsupport.h"
 #include "subnet.h"
 #include "debug.h"
 #include "events.h"
 #include "network_layer.h"
-#include "transport_layer.h"
+#include "structs.h"
 
 
 FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
@@ -209,7 +208,7 @@ void network_layer_main_loop() {
 
                     d2->to = forward(d2->globalDest);
                     d2->from = ThisStation;
-                    //printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.data.payload, d2->to);
+                    printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.data.payload, d2->to);
                     EnqueueFQ(NewFQE((void *) d2), from_network_layer_queue);
                     signal_link_layer_if_allowed(d2->to, from_network_layer_queue);
                 }

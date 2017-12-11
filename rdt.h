@@ -5,13 +5,13 @@
  *      Author: jacob
  */
 
-#include "fifoqueue.h"
-#include "transport_layer.h"
-
 
 #ifndef RDT_H_
 #define RDT_H_
 
+
+#include "fifoqueue.h"
+#include "structs.h"
 
 /* Events */
 #define NETWORK_LAYER_ALLOWED_TO_SEND  0x00000004
@@ -36,46 +36,6 @@ typedef enum {
     false, true
 } boolean;        /* boolean type */
 
-typedef unsigned int seq_nr;        /* sequence or ack numbers */
-
-
-typedef struct {
-    tpdu data;
-    int source;
-    int dest;
-} segment;        /* segment definition */
-
-
-
-/* For now only DATAGRAM is used, but for dynamic routing, ROUTERINFO is defined */
-typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */
-
-
-typedef struct {                        /* datagrams are transported in this layer */
-    segment data;   /* Data from the transport layer segment  */
-    datagram_kind kind;                   /* what kind of a datagram is it? */
-    int from;                                                /* From station address */
-    int to;                                                /* To station address */
-    int globalDest;
-    int globalSource;
-} datagram;
-
-typedef enum {
-    DATA, ACK, NAK
-} frame_kind;        /* frame_kind definition */
-
-
-typedef struct {        /* frames are transported in this layer */
-    frame_kind kind;        /* what kind of a frame is it? */
-    seq_nr seq;           /* sequence number */
-    seq_nr ack;           /* acknowledgement number */
-    datagram info;          /* the network layer segment */
-    int sendTime;
-    int recvTime;
-
-    int source;         /* Source station */
-    int dest;           /* Destination station */
-} frame;
 
 /* init_frame fills in default initial values in a frame. Protocols should
  * call this function before creating a new frame. Protocols may later update
