@@ -16,6 +16,7 @@
 #include "network_layer.h"
 #include "transport_layer.h"
 #include "application_layer.h"
+#include "structs.h"
 
 /* En macro for at lette overførslen af korrekt navn til Activate */
 #define ACTIVATE(n, f) Activate(n, f, #f)
@@ -361,7 +362,7 @@ void selective_repeat() {
                 //Lock(write_lock);
                 printf("FRAME_ARRIVAL\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
-                printf("    Frame from %i, to %i, globaldest: %i, globalsource: %i, message: %s\n", r.source, r.dest, r.info.globalDest, r.info.globalSource, r.info.data.data.payload);
+                printf("    Frame from %i, to %i, globaldest: %i, globalsource: %i, message: %s, segment dest: %i, tpdu dest: %i\n", r.source, r.dest, r.info.globalDest, r.info.globalSource, r.info.data.data.payload, r.info.data.dest, r.info.data.data.dest);
                 if (r.kind == DATA) {
                     printf("Got DATA\n");
                     /* An undamaged frame has arrived. */

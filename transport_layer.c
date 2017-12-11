@@ -345,7 +345,7 @@ int check_ports(transport_address port){
 
 void copyTPDUtoSegment(tpdu *t, segment *s){
     tpdu *t2;
-    t2 = malloc(sizeof(tpdu));
+    t2 = (tpdu *) malloc(sizeof(tpdu));
     memcpy(t2, t, sizeof(tpdu));
     s->data = *t2;
     s->dest = t->dest;

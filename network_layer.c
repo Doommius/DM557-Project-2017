@@ -179,11 +179,12 @@ void network_layer_main_loop() {
 
                 dequeueData(d2, for_network_layer_queue);
 
-                printf("");
 
                 if(!d2){
                     break;
                 }
+
+                printf("s dest: %i, s source: %i, tpdu dest: %i, d gD: %i, d gS: %i\n", d2->data.dest, d2->data.source, d2->data.data.dest, d2->globalDest, d2->globalSource);
 
                 printf("GLOBALDESTINATION: %i\n", d2->globalDest);
 
@@ -246,8 +247,13 @@ void network_layer_main_loop() {
                 copySegmenttoDatagram(d, s);
 
                 d->from = ThisStation;
+
+
                 d->globalSource = ThisStation;
                 d->globalDest = d->data.dest;
+
+
+
                 d->to = forward(d->data.dest);
                 //printf("Sending from: %i, to: %i, msg: %s\n", ThisStation, d->to, d->data.payload);
 
@@ -393,7 +399,7 @@ void dequeueData(datagram *d, FifoQueue queue){
 
 void copySegmenttoDatagram(datagram *d, segment *s){
     segment *s2;
-    s2 = malloc(sizeof(segment));
+    s2 = (segment *) malloc(sizeof(segment));
     memcpy(s2, s, sizeof(segment));
     d->data = *s2;
     //free(t);
