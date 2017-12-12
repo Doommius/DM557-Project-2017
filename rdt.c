@@ -274,7 +274,7 @@ void selective_repeat() {
     seq_nr next_frame_to_send;        /* upper edge of sender's window + 1 */
     seq_nr frame_expected;            /* lower edge of receiver's window */
     seq_nr too_far;                   /* upper edge of receiver's window + 1 */
-    int i, dest;                            /* index into buffer pool */
+    int i, dest, last_station;                            /* index into buffer pool */
     frame r;                          /* scratch variable */
     datagram out_buf[NR_BUFS];          /* buffers for the outbound stream */
     datagram in_buf[NR_BUFS];           /* buffers for the inbound stream */
@@ -331,6 +331,7 @@ void selective_repeat() {
     printf("%#010x\n", 1024);
     */
 
+    sleep(4);
     while (true) {
         // Wait for any of these events
         Wait(&event, events_we_handle);
@@ -348,6 +349,7 @@ void selective_repeat() {
                                        network_layer_lock); /* fetch new segment */
 
                     dest = out_buf[next_frame_to_send % NR_BUFS].to;
+                    last_station = dest;
                     network_layer_enabled[dest] = false;
 
                     printf("1. send, dest: %i\n", dest);
@@ -361,6 +363,7 @@ void selective_repeat() {
                 //Lock(write_lock);
                 printf("FRAME_ARRIVAL\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
+                last_station = r.source;
                 printf("    Frame from %i, to %i, globaldest: %i, globalsource: %i, message: %s, segment dest: %i, tpdu dest: %i\n", r.source, r.dest, r.info.globalDest, r.info.globalSource, r.info.data.data.payload, r.info.data.dest, r.info.data.data.dest);
                 if (r.kind == DATA) {
                     printf("Got DATA\n");
@@ -369,7 +372,7 @@ void selective_repeat() {
                         printf("2. send, dest: %i\n", r.source);
                         send_frame(NAK, 0, frame_expected, out_buf, r.source);
                     } else {
-                        //printf("1. starting ack timer for: %i\n", r.source);
+                        //printf("1. starting ack timer for: %i\n", r.last_station);
                         start_ack_timer(r.source);
                     }
                     if (between(frame_expected, r.seq, too_far) && (arrived[r.seq % NR_BUFS] == false)) {
@@ -398,7 +401,7 @@ void selective_repeat() {
                 while (between(ack_expected[r.source], r.ack, next_frame_to_send)) {
                     logLine(debug, "Advancing window %d\n", ack_expected[r.source]);
                     nbuffered = nbuffered - 1;                /* handle piggybacked ack */
-                    //printf("3. stopping timer for %i\n", r.source);
+                    //printf("3. stopping timer for %i\n", r.last_station);
                     stop_timer(ack_expected[r.source] % NR_BUFS, r.source);     /* frame arrived intact */
                     inc(ack_expected[r.source]);                        /* advance lower edge of sender's window */
                 }
@@ -437,6 +440,7 @@ void selective_repeat() {
 
                 printf("Timer ID: %i, ack_timer_id: %i, r.dest: %i, test: %i, ack_timer_id (test): %i, r.info.globalsource: %i\n", timer_id, ack_timer_id[r.dest], r.dest, test, ack_timer_id[test], r.info.globalSource);
 
+                last_station = test;
                 if(test != -1) {
                     if (timer_id == ack_timer_id[test]) { // Ack timer timer out
                         logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
@@ -456,9 +460,11 @@ void selective_repeat() {
         }
 
         if (nbuffered < NR_BUFS) {
-            enable_network_layer(ThisStation, network_layer_enabled, network_layer_lock);
+            printf("ENABLING network layer for station: %i\n", last_station);
+            enable_network_layer(last_station, network_layer_enabled, network_layer_lock);
         } else {
-            disable_network_layer(ThisStation, network_layer_enabled, network_layer_lock);
+            printf("DISABLING network layer for station: %i\n", last_station);
+            disable_network_layer(last_station, network_layer_enabled, network_layer_lock);
         }
     }
 }
@@ -609,10 +615,12 @@ int main(int argc, char *argv[]) {
     //Start transport layer
     ACTIVATE(1, transport_layer_loop);
     ACTIVATE(2, transport_layer_loop);
+    //ACTIVATE(4, transport_layer_loop);
 
     //Start application layer
     ACTIVATE(1, Station1_application_layer);
     ACTIVATE(2, Station2_application_layer);
+    //ACTIVATE(4, Station4_application_layer);
 
 
 

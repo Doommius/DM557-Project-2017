@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "transport_layer.h"
 #include "subnetsupport.h"
 #include "debug.h"
@@ -18,9 +19,13 @@ mlock_t *write_lock;
 
 FifoQueue listen_queue;
 
+//Queue for data to the application layer
+FifoQueue app_queue;
+
 event_t event;
 
 int connectionid; //do we even need this.
+int num_parts;
 
 connection connections[NUM_CONNECTIONS];
 
@@ -53,10 +58,12 @@ int listen(transport_address local_address) {
                 if (t->destport == local_address){
                     //Good connection
                     DeleteFQE(e);
+                    Unlock(transport_layer_lock);
                     return 1;
                 }
                 //Bad connection
                 DeleteFQE(e);
+                Unlock(transport_layer_lock);
                 return -1;
         }
     }
@@ -144,8 +151,12 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
  * TODO: Do we need to wait for reply from connection we are killing? -Mark
  */
 int disconnect(int connection_id) {
+    printf("Waiting for lock\n");
     Lock(transport_layer_lock);
-    tpdu *t = malloc(sizeof(tpdu));
+    printf("Disconnecting %i from %i\n", get_ThisStation(), connection_id);
+    tpdu *t;
+    t = malloc(sizeof(tpdu));
+
     FifoQueue queue;
     queue = (FifoQueue) get_queue_TtoN();
 
@@ -173,14 +184,46 @@ int disconnect(int connection_id) {
  */
 int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize) {
 
-    Wait(&event, DATA_FOR_APPLICATION_LAYER);
 
-    segment *segment;
+    long int events_we_handle = DATA_FOR_APPLICATION_LAYER;
 
-    segment = DequeueFQ(get_queue_NtoT)->val;
-    memcpy(buf, segment->data.payload, bufsize);
-    //dequeue from network to transport queue.
+    char *msg;
+    msg = malloc(bufsize);
 
+    tpdu *t;
+    t = malloc(sizeof(tpdu));
+
+    FifoQueueEntry e;
+
+    printf("Waiting for message\n");
+    while (true){
+        Wait(&event, events_we_handle);
+        switch (event.type){
+            case DATA_FOR_APPLICATION_LAYER:
+                printf("Got signal\n");
+                if (check_connection(remote_host)) {
+                    if (!EmptyFQ(app_queue)) {
+                        for (int i = 0; i < num_parts; i++) {
+                            e = DequeueFQ(app_queue);
+                            t = ValueOfFQE(e);
+                            printf("Fik dequet msg: %s, i: %i\n", t->payload, i);
+                            if (i == 0) {
+                                strcpy(msg, t->payload);
+                            } else {
+                                strcat(msg, t->payload);
+                            }
+                        }
+
+                        //Recreated message, return success
+                        memcpy(buf, msg, strlen(msg));
+                        return 1;
+                    }
+                }
+                //No connection, return 0
+                return 0;
+                break;
+        }
+    }
 }
 
 /*
@@ -190,9 +233,9 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
 int send(int connection_id, unsigned char *buf, unsigned int bytes) {
     if(check_connection(connection_id)) {
 
+        printf("CONNETION ID: %i\n", connection_id);
+        connections[connection_id].state = sending;
         int num_packets;
-        segment *s;
-        s = (segment *) malloc(sizeof(segment));
 
         FifoQueue queue;
         queue = (FifoQueue) get_queue_TtoN();
@@ -204,30 +247,67 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
         int overhead;
         overhead = (bytes % TPDU_PAYLOAD_SIZE);
 
+
+        tpdu *t;
+        t = (tpdu *) malloc(sizeof(tpdu));
+
+        segment *s;
+        s = (segment *) malloc(sizeof(segment));
+
+
+        t->dest = connection_id;
+        t->source = get_ThisStation();
+        t->destport = connections[connection_id].remote_host;
+        t->type = data_notiff;
+        t->part = num_packets;
+
+        copyTPDUtoSegment(t, s);
+        EnqueueFQ(NewFQE( (void *) s), queue);
+        printf("sending notification\n");
+        Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
+        sleep(1);
+
+        //TODO find a way to number what part of the message we are sending, so we can rebuild it later
         for (int i = 0; i < num_packets; i++) {
 
-            tpdu *t;
-            t = malloc(sizeof(tpdu));
+            segment *s2;
+            s2 = (segment *) malloc(sizeof(segment));
+
+            tpdu *t2;
+            t2 = (tpdu *) malloc(sizeof(tpdu));
+
 
             if (i < num_packets - 1) {
-                memcpy(t->payload, buf + i * TPDU_PAYLOAD_SIZE, TPDU_PAYLOAD_SIZE);
-                t->bytes = TPDU_PAYLOAD_SIZE;
+                memcpy(t2->payload, buf + i * TPDU_PAYLOAD_SIZE, TPDU_PAYLOAD_SIZE);
+                t2->bytes = TPDU_PAYLOAD_SIZE;
             } else {
-                memcpy(t->payload, buf + i * TPDU_PAYLOAD_SIZE, overhead);
-                t->bytes = overhead;
+                memcpy(t2->payload, buf + i * TPDU_PAYLOAD_SIZE, overhead);
+                t2->bytes = overhead;
             }
 
-            printf("Message: %s\n", t->payload);
-            t->dest = connection_id;
 
-            copyTPDUtoSegment(t, s);
+            printf("Number of bytes we send: %i, message we send: %s\n", t2->bytes, t2->payload);
 
-            EnqueueFQ(NewFQE((void *) s), queue);
+            t2->dest = connection_id;
+            t2->source = get_ThisStation();
+            t2->destport = connections[connection_id].remote_host;
+            t2->returnport = connections[connection_id].local_address;
+            t2->part = i;
+            t2->type = data_tpdu;
 
-            for (int j = 0; j < num_packets; j++) {
-                Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
-            }
+            copyTPDUtoSegment(t2, s2);
+
+            EnqueueFQ(NewFQE((void *) s2), queue);
+
         }
+
+        printf("Sending message\n");
+        for (int j = 0; j < num_packets; j++) {
+            Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
+
+        }
+
+
         return 1;
     }
     //Error - No connection, so we don't send
@@ -246,11 +326,12 @@ void transport_layer_loop(void) {
     Init_lock(transport_layer_lock);
 
 
-    int index;
+    int index, counter = 0;
     connectionid = 0;
     FifoQueue from_queue, for_queue;
 
     listen_queue = InitializeFQ();
+    app_queue = InitializeFQ();
 
     segment *s;
     s = (segment *) malloc(sizeof(segment));
@@ -262,7 +343,7 @@ void transport_layer_loop(void) {
         Wait(&event, events_we_handle);
         switch (event.type) {
             case DATA_FOR_TRANSPORT_LAYER:
-                printf("DATA FOR TRANSPORT LAYER");
+                printf("DATA FOR TRANSPORT LAYER\n");
                 Lock(transport_layer_lock);
                 from_queue = (FifoQueue) get_queue_NtoT();
                 for_queue = (FifoQueue) get_queue_TtoN();
@@ -316,14 +397,42 @@ void transport_layer_loop(void) {
                         break;
 
                     case clear_conf:
+                        printf("Clear connection\n");
                         index = check_connection(t->destport);
                         connections[index].state = disconn;
+                        break;
+
+                    case data_tpdu:
+                        //Got (part of) message
+                        printf("Data for application layer\n");
+                        tpdu *t2;
+                        t2 = malloc(sizeof(tpdu));
+                        memcpy(t2, t, sizeof(tpdu));
+                        printf("Queing data\n");
+                        EnqueueFQ(NewFQE((void *) t2), app_queue);
+                        counter++;
+                        printf("Counter: %i\n", counter);
+
+                        if(counter == num_parts){
+                            //Recieved all parts of message
+                            printf("Signalling receive\n");
+                            Signal(DATA_FOR_APPLICATION_LAYER, NULL);
+                        }
+                        break;
+
+                        //TODO Should we send a response back?
+                    case data_notiff:
+                        //Notification for how many parts the message is split up in
+                        printf("Notification for data\n");
+                        num_parts = t->part;
+                        printf("Going to get a message consisting of %i parts\n", num_parts);
                         break;
                 }
 
                 DeleteFQE(e);
                 Unlock(transport_layer_lock);
                 break;
+
             case DATA_FROM_APPLICATION_LAYER:
                 printf("DATA FROM APPLICATION LAYER");
                 break;
@@ -358,9 +467,10 @@ void copyTPDUtoSegment(tpdu *t, segment *s){
     t2 = (tpdu *) malloc(sizeof(tpdu));
     memcpy(t2, t, sizeof(tpdu));
     s->data = *t2;
-    s->dest = t->dest;
-    s->source = t->source;
+    s->dest = t2->dest;
+    s->source = t2->source;
     printf("sending segment to: %i, from %i\n", s->dest, s->source);
+    free(t);
 }
 
 //Swaps around a tpdu's source and destination

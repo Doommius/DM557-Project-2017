@@ -5,7 +5,7 @@
 #ifndef DM557_PROJEKT_2017_STRUCTS_H
 #define DM557_PROJEKT_2017_STRUCTS_H
 
-#define TPDU_PAYLOAD_SIZE 64
+#define TPDU_PAYLOAD_SIZE 15
 
 #define TPDU_SIZE 8
 
@@ -17,7 +17,8 @@ typedef enum {
     tcredit,
     clear_req,
     clear_conf,
-    data_tpdu
+    data_tpdu,
+    data_notiff
 } tpdu_type;
 
 typedef struct {
@@ -25,6 +26,7 @@ typedef struct {
     int             returnport;
     //char            m;   //What is m and q?
     //char            q;
+    int             part;
     unsigned int    dest;
     unsigned int    source;
     tpdu_type       type;
