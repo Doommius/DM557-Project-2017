@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "network_layer.h"
 #include "subnet.h"
+#include "structs.h"
 
 
 mlock_t *network_layer_lock;
@@ -43,7 +44,7 @@ int listen(transport_address local_address) {
         Wait(&event, events_we_handle);
 
         switch (event.type) {
-            case DATA_FOR_TRANSPORT_LAYER:
+            case CONNECTION_REPLY:
                 Lock(transport_layer_lock);
 
                 e = DequeueFQ(listen_queue);
@@ -54,6 +55,7 @@ int listen(transport_address local_address) {
                     DeleteFQE(e);
                     return 1;
                 }
+                //Bad connection
                 DeleteFQE(e);
                 return -1;
         }
@@ -90,6 +92,8 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 data->returnport = local_ta;
                 data->destport = remote_ta;
                 data->dest = remote_host;
+                data->source = get_ThisStation();
+
                 printf("Creating message\n");
                 strcpy(data->payload, "Hi");
                 printf("Created message\n");
@@ -118,7 +122,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                     connectionid = connection;
 
                     //TODO Load all the informaton about the connection into some kind of data structure.
-                    printf("Connection Established");
+                    printf("Connection Established\n");
                     return connection;
                 }
 
@@ -248,9 +252,12 @@ void transport_layer_loop(void) {
 
     listen_queue = InitializeFQ();
 
+    segment *s;
+    s = (segment *) malloc(sizeof(segment));
 
     long int events_we_handle;
     events_we_handle = DATA_FOR_TRANSPORT_LAYER | DATA_FROM_APPLICATION_LAYER;
+
     while (true) {
         Wait(&event, events_we_handle);
         switch (event.type) {
@@ -264,12 +271,9 @@ void transport_layer_loop(void) {
                 FifoQueueEntry e;
                 e = DequeueFQ(from_queue);
 
-
-                segment *s;
-                s = (segment *) malloc(sizeof(segment));
-
                 t = ValueOfFQE(e);
 
+                printf("Checking tpdu type\n");
                 switch (t->type){
                     case call_req:
                         printf("Connection request\n");
@@ -283,7 +287,9 @@ void transport_layer_loop(void) {
 
                             //Send reply back
                             t->type = call_rep;
+                            swapSandD(t);
 
+                            printf("Sending reply:\n");
                             copyTPDUtoSegment(t, s);
 
                             EnqueueFQ(NewFQE((void *) s), for_queue);
@@ -293,6 +299,8 @@ void transport_layer_loop(void) {
                             printf("Port bad: %i\n", t->destport);
                             t->type = call_rep;
                             t->destport = -1;
+
+                            swapSandD(t);
 
                             copyTPDUtoSegment(t, s);
 
@@ -351,6 +359,15 @@ void copyTPDUtoSegment(tpdu *t, segment *s){
     memcpy(t2, t, sizeof(tpdu));
     s->data = *t2;
     s->dest = t->dest;
-    s->source = get_ThisStation();
+    s->source = t->source;
+    printf("sending segment to: %i, from %i\n", s->dest, s->source);
 }
 
+//Swaps around a tpdu's source and destination
+void swapSandD(tpdu *t){
+    int prevD = 0 , prevS = 0;
+    prevD = t->dest;
+    prevS = t->source;
+    t->dest = prevS;
+    t->source = prevD;
+}

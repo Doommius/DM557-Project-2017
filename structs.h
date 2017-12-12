@@ -26,6 +26,7 @@ typedef struct {
     //char            m;   //What is m and q?
     //char            q;
     unsigned int    dest;
+    unsigned int    source;
     tpdu_type       type;
     unsigned int    bytes;
     char            payload[TPDU_PAYLOAD_SIZE];

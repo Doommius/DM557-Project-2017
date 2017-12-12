@@ -61,4 +61,6 @@ int check_ports(transport_address port);
 
 void copyTPDUtoSegment(tpdu *t, segment *s);
 
+void swapSandD(tpdu *t);
+
 #endif /* __TRANSPORT_LAYER_H__ */
