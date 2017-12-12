@@ -105,7 +105,6 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
 
     to_physical_layer(&s, dest);
 
-
     printf("Sending frame from: %i, to %i, with gD: %i, gS: %i\n", ThisStation, dest, s.info.globalDest, s.info.globalSource);
 
     if (fk == DATA) {
@@ -492,6 +491,8 @@ int from_physical_layer(frame *r) {
     FromSubnet(&source, &dest, (char *) r, &length);
     r->source = source;
     r->dest = dest;
+    printf("length %i\n", length);
+    printf("tpdu size: %i, frame size: %i\n", sizeof(tpdu), sizeof(frame));
     return 0;
 }
 

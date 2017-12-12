@@ -91,7 +91,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 data->destport = remote_ta;
                 data->dest = remote_host;
                 printf("Creating message\n");
-                strcpy(data->payload, "Hello world");
+                strcpy(data->payload, "Hi");
                 printf("Created message\n");
 
                 FifoQueue queue;
@@ -247,8 +247,6 @@ void transport_layer_loop(void) {
     FifoQueue from_queue, for_queue;
 
     listen_queue = InitializeFQ();
-    segment *s;
-    s = (segment *) malloc(sizeof(segment));
 
 
     long int events_we_handle;
@@ -265,6 +263,10 @@ void transport_layer_loop(void) {
                 tpdu *t;
                 FifoQueueEntry e;
                 e = DequeueFQ(from_queue);
+
+
+                segment *s;
+                s = (segment *) malloc(sizeof(segment));
 
                 t = ValueOfFQE(e);
 
