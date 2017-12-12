@@ -8,7 +8,10 @@
 #include "events.h"
 #include "rdt.h"
 
-#define NR_BUFS 8
+#define NR_BUFS 5
+
+FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
+FifoQueue queue_NtoT;   //Queue from Network Layer to Transport Layer
 
 
 typedef struct {
@@ -34,9 +37,9 @@ void network_layer_main_loop();
 /* If there is data that should be sent, this function will check that the
  * relevant queue is not empty, and that the link layer has allowed us to send
  * to the neighbour  */
-void signal_link_layer_if_allowed( int address);
+void signal_link_layer_if_allowed( int address, FifoQueue queue );
 
-/* Fetch a packet from the network layer for transmission on the channel. */
+/* Fetch a segment from the network layer for transmission on the channel. */
 void from_network_layer(datagram *d,  FifoQueue from_network_layer_queue, mlock_t *network_layer_lock);
 
 /* Deliver information from an inbound frame to the network layer. */
@@ -48,7 +51,7 @@ void enable_network_layer(int station, boolean network_layer_allowance_list[], m
 /* Forbid the network layer from causing a network_layer_ready event. */
 void disable_network_layer(int station, boolean network_layer_allowance_list[], mlock_t *network_layer_lock);
 
-void packet_to_string(packet *data, char *buffer);
+void packet_to_string(segment *data, char *buffer);
 
 void datagram_to_string(datagram *d, char *buffer);
 
@@ -67,5 +70,11 @@ void FakeNetworkLayer();
 void init_forwardtable(forwarding_table *Table);
 
 int round_robin(int *connections);
+
+void dequeueSegment(segment *s, FifoQueue queue);
+
+void dequeueData( datagram *d, FifoQueue queue);
+
+void copySegmenttoDatagram(datagram *d, segment *s);
 
 #endif //NETWORK_LAYER_H

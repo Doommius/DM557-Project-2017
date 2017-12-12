@@ -59,8 +59,14 @@ int FromSubnet(int *source, int *dest, char *buffer, int *length)
       /* Henter data */
       *source = inbuf->station;
       *dest   = ThisStation;
-      memcopy(buffer, (char *)inbuf->data, inbuf->size);
-      *length = inbuf->size;
+        //TODO Skriv om ændring i pakke størrelse
+
+
+        memcopy(buffer, (char *)inbuf->data, BUFFERSIZE);
+        *length = BUFFERSIZE;
+
+        //memcopy(buffer, (char *)inbuf->data, inbuf->size);
+      //*length = inbuf->size;
 
       /* Data kopieres til log-bufferen */
       sprintf(msg, "(%d) queued. FromSubnet: ", GC.InData.size );

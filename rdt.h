@@ -5,65 +5,37 @@
  *      Author: jacob
  */
 
-#include "fifoqueue.h"
-
 
 #ifndef RDT_H_
 #define RDT_H_
+
+
+#include "fifoqueue.h"
+#include "structs.h"
+
+/* Events */
+#define NETWORK_LAYER_ALLOWED_TO_SEND  0x00000004
+#define NETWORK_LAYER_READY            0x00000008
+#define DATA_FOR_NETWORK_LAYER         0x00000010
+#define DATA_FOR_TRANSPORT_LAYER       0x00000020
+#define DATA_FROM_TRANSPORT_LAYER      0x00000040
+#define DATA_FOR_LINK_LAYER            0x00000080
+#define DONE_SENDING                   0x00000100
+#define DATA_FOR_APPLICATION_LAYER     0x00000200
+#define DATA_FROM_APPLICATION_LAYER    0x00000400
+#define CONNECTION_REPLY               0x00000800
 
 
 
 #define FRAME_TIMER_TIMEOUT_MILLIS  250
 #define ACT_TIMER_TIMEOUT_MILLIS     50
 
-#define MAX_PKT 8        /* determines packet size in bytes */
-#define MAX_SEG 8
+#define MAX_PKT 8       /* determines packet size in bytes */
 
 typedef enum {
     false, true
 } boolean;        /* boolean type */
 
-typedef unsigned int seq_nr;        /* sequence or ack numbers */
-
-
-typedef struct {
-    char data[MAX_PKT];
-
-    int source;
-    int dest;
-} packet;        /* packet definition */
-
-
-
-/* For now only DATAGRAM is used, but for dynamic routing, ROUTERINFO is defined */
-typedef enum {DATAGRAM, ROUTERINFO} datagram_kind;        /* datagram_kind definition */
-
-
-typedef struct {                        /* datagrams are transported in this layer */
-    packet *data;   /* Data from the transport layer segment  */
-    datagram_kind kind;                   /* what kind of a datagram is it? */
-    int from;                                                /* From station address */
-    int to;                                                /* To station address */
-    int globaldest;
-    char msg[MAX_PKT];
-} datagram;
-
-typedef enum {
-    DATA, ACK, NAK
-} frame_kind;        /* frame_kind definition */
-
-
-typedef struct {        /* frames are transported in this layer */
-    frame_kind kind;        /* what kind of a frame is it? */
-    seq_nr seq;           /* sequence number */
-    seq_nr ack;           /* acknowledgement number */
-    datagram info;          /* the network layer packet */
-    int sendTime;
-    int recvTime;
-
-    int source;         /* Source station */
-    int dest;           /* Destination station */
-} frame;
 
 /* init_frame fills in default initial values in a frame. Protocols should
  * call this function before creating a new frame. Protocols may later update
@@ -76,7 +48,7 @@ void init_frame(frame *s, int count);
 int from_physical_layer(frame *r);
 
 /* Pass the frame to the physical layer for transmission. */
-void to_physical_layer(frame *r);
+void to_physical_layer(frame *r, int dest);
 
 /* Start the clock running and enable the timeout event. */
 void start_timer(seq_nr k, int station);
@@ -100,6 +72,8 @@ void stop_ack_timer(int station);
 void init_max_seqnr(unsigned int o);
 
 unsigned int get_timedout_seqnr(void);
+
+void selective_repeat(void);
 
 int get_ThisStation();
 

@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "rdt.h"
 #include "subnetsupport.h"
 #include "subnet.h"
 #include "debug.h"
 #include "events.h"
 #include "network_layer.h"
+#include "structs.h"
 
 
 FifoQueue queue_TtoN;   //Queue from Transport layer to Network Layer
@@ -159,45 +159,59 @@ void network_layer_main_loop() {
             case NETWORK_LAYER_ALLOWED_TO_SEND:
                 Lock(network_layer_lock);
 
-                if (network_layer_enabled[ThisStation] && !EmptyFQ(from_network_layer_queue)) {
+                printf("NETWORK LAYER ALLOWED TO SEND\n");
+
+                if (!EmptyFQ(from_network_layer_queue) && network_layer_enabled[ThisStation]) {
                     // Signal element is ready
                     logLine(info, "Sending signal for message #%d\n", i);
-                    network_layer_enabled[ThisStation] = false;
                     Signal(NETWORK_LAYER_READY, NULL);
                 }
                 Unlock(network_layer_lock);
                 break;
 
             case DATA_FOR_NETWORK_LAYER:
+                printf("Got message from link layer\n");
                 Lock(network_layer_lock);
 
                 datagram *d2;
 
-                e = DequeueFQ(for_network_layer_queue);
+                d2 = (datagram *) malloc(sizeof(datagram));
 
-                d2 = (datagram *) e->val;
+                dequeueData(d2, for_network_layer_queue);
 
-                if (d2->globaldest == ThisStation ){
 
-                    printf("Got message for us, sending to transport layer. Message: %s\n", d2->msg);
-                    packet *p2;
-                    p2 = (packet *) malloc(sizeof(packet));
-                    strcpy(p2->data, d2->msg);
-                    p2->source = d2->from;
-                    p2->dest = d2->globaldest;
+                if(!d2){
+                    break;
+                }
 
-                    EnqueueFQ(NewFQE((void *) p2), from_queue);
+                printf("s dest: %i, s source: %i, tpdu dest: %i, d gD: %i, d gS: %i\n", d2->data.dest, d2->data.source, d2->data.data.dest, d2->globalDest, d2->globalSource);
+
+                printf("GLOBALDESTINATION: %i\n", d2->globalDest);
+
+                if (d2->globalDest == ThisStation ){
+
+                    //printf("Got message for us, sending to transport layer. Message: %s\n", d2->data.data);
+                    /*
+                    segment *p2;
+                    p2 = (segment *) malloc(sizeof(segment));
+                    p2->source = d2->globalSource;
+                    p2->dest = d2->globalDest;
+                    */
+
+
+                    EnqueueFQ(NewFQE((void *) &(d2->data)), from_queue);
+                    printf("Enqueuet package til transport lag\n");
                     Signal(DATA_FOR_TRANSPORT_LAYER, NULL);
 
                 } else {
                     int prevSource;
                     prevSource = d2->from;
 
-                    d2->to = forward(d2->globaldest);
+                    d2->to = forward(d2->globalDest);
                     d2->from = ThisStation;
-                    printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->msg, d2->to);
+                    printf("Got message that was not for us: %i, from: %i, containing the message: %s. Forwarding to: %i\n", ThisStation, prevSource, d2->data.data.payload, d2->to);
                     EnqueueFQ(NewFQE((void *) d2), from_network_layer_queue);
-                    signal_link_layer_if_allowed(d2->to);
+                    signal_link_layer_if_allowed(d2->to, from_network_layer_queue);
                 }
 
                 Unlock(network_layer_lock);
@@ -205,25 +219,47 @@ void network_layer_main_loop() {
                 break;
 
             case DATA_FROM_TRANSPORT_LAYER:
+                printf("DATA FROM TRANSPORT LAYER\n");
 
                 Lock(network_layer_lock);
                 for_queue = (FifoQueue) get_queue_TtoN();
 
+                printf("Is queue empty? %i\n", EmptyFQ(for_queue));
                 datagram *d;
-                e = DequeueFQ(for_queue);
+                segment *s;
+
+                s = (segment *) malloc(sizeof(segment));
 
                 d = (datagram *) malloc(sizeof(datagram));
 
-                d->data = e->val;
+
+                dequeueSegment(s, for_queue);
+
+                printf("Fik dequeuet, message: %s\n", s->data.payload);
+
+
+                //printf("dequeuet segment, fra: %i, til %i, msg: %s\n", p->source, p->dest, p->data);
+
+
+
+                //d->data = p;
+
+                copySegmenttoDatagram(d, s);
+
                 d->from = ThisStation;
-                d->globaldest = d->data->dest;
-                strcpy(d->msg, d->data->data);
-                d->to = forward(d->data->dest);
 
-                printf("Sending datagram to link layer, with source: %i, destination: %i, and message: %s, through: %i\n", d->from, d->globaldest, d->msg, d->to);
 
+                d->globalSource = ThisStation;
+                d->globalDest = d->data.dest;
+
+
+
+                d->to = forward(d->data.dest);
+                //printf("Sending from: %i, to: %i, msg: %s\n", ThisStation, d->to, d->data.payload);
+
+                printf("Queueing datagram with globaldest: %i, globalsource: %i\n", d->globalDest, d->globalSource);
                 EnqueueFQ(NewFQE((void *) d), from_network_layer_queue);
-                signal_link_layer_if_allowed(d->to);
+                signal_link_layer_if_allowed(d->to, from_network_layer_queue);
                 Unlock(network_layer_lock);
 
                 break;
@@ -243,28 +279,30 @@ void network_layer_main_loop() {
  * relevant queue is not empty, and that the link layer has allowed us to send
  * to the neighbour
  */
-void signal_link_layer_if_allowed(int address) {
-    FifoQueue queue;
-    queue = get_from_queue();
-    if (!EmptyFQ(queue)) {
-        enable_network_layer(address, network_layer_enabled, link_layer_lock);
+void signal_link_layer_if_allowed(int address, FifoQueue queue) {
+
+    printf("Signal link layer?\n");
+    if (!EmptyFQ(queue) && network_layer_enabled[address])  {
+        printf("Signalling link layer\n");
+        Signal(NETWORK_LAYER_READY, NULL);
     }
 }
 
 void datagram_to_string(datagram *d, char *buffer){
-    strncpy(buffer, (char *) d->data->data, MAX_PKT);
+    //strncpy(buffer, (char *) d->data.data, MAX_PKT);
     buffer[MAX_PKT] = '\0';
 }
 
 
-void packet_to_string(packet *data, char *buffer) {
-    strncpy(buffer, (char *) data->data, MAX_PKT);
+void packet_to_string(segment *data, char *buffer) {
+    //strncpy(buffer, (char *) data->data, MAX_PKT);
     buffer[MAX_PKT] = '\0';
 }
 
 boolean *get_network_layer_enabled(){
     return network_layer_enabled;
 }
+
 void from_network_layer(datagram *d, FifoQueue from_network_layer_queue, mlock_t *network_layer_lock) {
     FifoQueueEntry e;
 
@@ -275,8 +313,8 @@ void from_network_layer(datagram *d, FifoQueue from_network_layer_queue, mlock_t
     if (!e) {
         logLine(error, "ERROR: We did not receive anything from the queue, like we should have\n");
     } else {
-        memcpy(d, (char *) ValueOfFQE(e), sizeof(datagram));
-        free( (void *)ValueOfFQE(e));
+        memcpy(d, (datagram *) ValueOfFQE(e), sizeof(datagram));
+        free( (void *) ValueOfFQE(e));
         DeleteFQE(e);
     }
 }
@@ -287,13 +325,17 @@ void to_network_layer(datagram *d, FifoQueue for_network_layer_queue, mlock_t *n
     datagram *d2;
 
     d2 = (datagram *) malloc(sizeof(datagram));
+    memcpy(d2, d, sizeof(datagram));
 
+/*
     d2->data = d->data;
     d2->from = d->from;
     d2->to = d->to;
     d2->kind = d->kind;
-    d2->globaldest = d->globaldest;
-    strcpy(d2->msg, d->msg);
+    d2->globalDest = d->globalDest;
+*/
+
+    //printf("Enqueueing datagram with message: %s, from: %i, to: %i\n", d2->data->data, d2->from, d2->to);
     EnqueueFQ(NewFQE((void *) d2), for_network_layer_queue);
 
     Unlock(network_layer_lock);
@@ -330,6 +372,37 @@ FifoQueue *get_queue_NtoT() {
  */
 FifoQueue *get_queue_TtoN() {
     return (FifoQueue *) queue_TtoN;
+}
+
+void dequeueSegment(segment *s, FifoQueue queue){
+
+    printf("Dequeuer\n");
+    FifoQueueEntry e;
+    e = DequeueFQ(queue);
+    memcpy(s, e->val, sizeof(segment));
+    DeleteFQE(e);
+}
+
+void dequeueData(datagram *d, FifoQueue queue){
+
+    FifoQueueEntry e;
+    e = DequeueFQ(queue);
+    if (!e){
+        printf("Nothing in queue for network layer\n");
+    }
+    else {
+        memcpy(d, e->val, sizeof(datagram));
+        DeleteFQE(e);
+    }
+
+}
+
+void copySegmenttoDatagram(datagram *d, segment *s){
+    segment *s2;
+    s2 = (segment *) malloc(sizeof(segment));
+    memcpy(s2, s, sizeof(segment));
+    d->data = *s2;
+    //free(t);
 }
 
 

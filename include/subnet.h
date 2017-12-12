@@ -11,7 +11,7 @@
 #define _SUBNET_H_
 
 /* macro'er: */
-#define BUFFERSIZE   64           /* Størrelsen af de datapakker der overføres */
+#define BUFFERSIZE   128           /* Størrelsen af de datapakker der overføres */
                                   /* via subnettet. (i bytes)                  */
 
                                   /* Pre-definerede event:                     */
