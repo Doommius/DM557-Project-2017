@@ -93,14 +93,14 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
     s.kind = fk;        /* kind == data, ack, or nak */
     if (fk == DATA) {
         s.info = buffer[frame_nr % NR_BUFS];
-        printf("1. DATA\n");
+        //printf("1. DATA\n");
     }
 
     s.seq = frame_nr;        /* only meaningful for data frames */
     s.ack = (frame_expected + MAX_SEQ) % (MAX_SEQ + 1);
     if (fk == NAK) {
         no_nak[dest] = false;        /* one nak per frame, please */
-        printf("NAK\n");
+        //printf("NAK\n");
     }
 
     to_physical_layer(&s, dest);
@@ -109,9 +109,9 @@ static void send_frame(frame_kind fk, seq_nr frame_nr, seq_nr frame_expected, da
 
     if (fk == DATA) {
         start_timer(frame_nr, dest);
-        printf("2. DATA\n");
+        //printf("2. DATA\n");
     }
-    printf("5. stopping ack timer: %i\n", dest);
+    //printf("5. stopping ack timer: %i\n", dest);
     stop_ack_timer(dest);        /* no need for separate ack frame */
 }
 
@@ -352,7 +352,7 @@ void selective_repeat() {
                     last_station = dest;
                     network_layer_enabled[dest] = false;
 
-                    printf("1. send, dest: %i\n", dest);
+                    //printf("1. send, dest: %i\n", dest);
                     send_frame(DATA, next_frame_to_send, frame_expected, out_buf, dest);        /* transmit the frame */
                     inc(next_frame_to_send);        /* advance upper window edge */
                     //Unlock(write_lock);
@@ -364,12 +364,12 @@ void selective_repeat() {
                 printf("FRAME_ARRIVAL\n");
                 from_physical_layer(&r);        /* fetch incoming frame from physical layer */
                 last_station = r.source;
-                printf("    Frame from %i, to %i, globaldest: %i, globalsource: %i, message: %s, segment dest: %i, tpdu dest: %i\n", r.source, r.dest, r.info.globalDest, r.info.globalSource, r.info.data.data.payload, r.info.data.dest, r.info.data.data.dest);
+                printf("    Frame from %i, to %i, globaldest: %i, globalsource: %i\n", r.source, r.dest, r.info.globalDest, r.info.globalSource);
                 if (r.kind == DATA) {
-                    printf("Got DATA\n");
+                    //printf("Got DATA\n");
                     /* An undamaged frame has arrived. */
                     if ((r.seq != frame_expected) && no_nak[r.source]) {
-                        printf("2. send, dest: %i\n", r.source);
+                        //printf("2. send, dest: %i\n", r.source);
                         send_frame(NAK, 0, frame_expected, out_buf, r.source);
                     } else {
                         //printf("1. starting ack timer for: %i\n", r.last_station);
@@ -387,13 +387,13 @@ void selective_repeat() {
                             arrived[frame_expected % NR_BUFS] = false;
                             inc(frame_expected);        /* advance lower edge of receiver's window */
                             inc(too_far);        /* advance upper edge of receiver's window */
-                            printf("2. starting ack timer for: %i\n", r.source);
+                            //printf("2. starting ack timer for: %i\n", r.source);
                             start_ack_timer(r.source);        /* to see if (a separate ack is needed */
                         }
                     }
                 }
                 if ((r.kind == NAK) && between(ack_expected[r.source], (r.ack + 1) % (MAX_SEQ + 1), next_frame_to_send)) {
-                    printf("3. send, dest: %i\n", r.source);
+                    //printf("3. send, dest: %i\n", r.source);
                     send_frame(DATA, (r.ack + 1) % (MAX_SEQ + 1), frame_expected, out_buf, r.source);
                 }
 
@@ -419,7 +419,7 @@ void selective_repeat() {
 
                 int test;
                 test = -1;
-                printf("finding ID\n");
+                //printf("finding ID\n");
                 test = find_Timer_ID(timer_id);
 
                 //printf("Timer ID: %i, ack_timer_id: %i, r.dest: %i, test: %i, ack_timer_id (test): %i, r.info.globalsource: %i, last_station: %i, ack_timer_id (ls): %i\n", timer_id, ack_timer_id[r.dest], r.dest, test, ack_timer_id[test], r.info.globalSource, last_station, ack_timer_id[last_station]);
@@ -430,13 +430,13 @@ void selective_repeat() {
                         logLine(debug, "This was an ack-timer timeout. Sending explicit ack.\n");
                         free(event.msg);
                         ack_timer_id[test] = -1; // It is no longer running
-                        printf("4. send, %i, test: %i\n", r.info.globalSource, test);
+                        //printf("4. send, %i, test: %i\n", r.info.globalSource, test);
                         send_frame(ACK, 0, frame_expected, out_buf, test);        /* ack timer expired; send ack */
                     } else {
                         int timed_out_seq_nr = atoi((char *) event.msg);
-                        printf("Event msg: %s\n", (char *) event.msg);
+                        //printf("Event msg: %s\n", (char *) event.msg);
                         logLine(debug, "Timeout for frame - need to resend frame %d\n", timed_out_seq_nr);
-                        printf("5. send, %i, test: %i\n", r.info.globalSource, test);
+                        //printf("5. send, %i, test: %i\n", r.info.globalSource, test);
                         send_frame(DATA, timed_out_seq_nr, frame_expected, out_buf, test);
                     }
                 }
@@ -444,10 +444,10 @@ void selective_repeat() {
         }
 
         if (nbuffered < NR_BUFS) {
-            printf("ENABLING network layer for station: %i\n", last_station);
+            //printf("ENABLING network layer for station: %i\n", last_station);
             enable_network_layer(last_station, network_layer_enabled, network_layer_lock);
         } else {
-            printf("DISABLING network layer for station: %i\n", last_station);
+            //printf("DISABLING network layer for station: %i\n", last_station);
             disable_network_layer(last_station, network_layer_enabled, network_layer_lock);
         }
     }
@@ -481,15 +481,15 @@ int from_physical_layer(frame *r) {
     FromSubnet(&source, &dest, (char *) r, &length);
     r->source = source;
     r->dest = dest;
-    printf("length %i\n", length);
-    printf("tpdu size: %i, frame size: %i\n", sizeof(tpdu), sizeof(frame));
+    //printf("length %i\n", length);
+    ///printf("tpdu size: %i, frame size: %i\n", sizeof(tpdu), sizeof(frame));
     return 0;
 }
 
 
 void to_physical_layer(frame *r, int dest) {
 
-    printf("physical layer, gd: %i\n", r->info.globalDest);
+    //printf("physical layer, gd: %i\n", r->info.globalDest);
     ToSubnet(ThisStation, dest, (char *) r, sizeof(frame));
     //printf("After ToSubnet\n");
     print_frame(r, "sending");
@@ -502,7 +502,7 @@ void start_timer(seq_nr k, int station) {
     sprintf(msg, "%d", k); // Save seq_nr in message
 
     timer_ids[k % NR_BUFS][station] = SetTimer(FRAME_TIMER_TIMEOUT_MILLIS, (void *) msg);
-    printf("starting timer for station: %i, with value: %i. k: %i, k mod NR_BUFS: %i, msg: %s\n", station, timer_ids[k % NR_BUFS][station], k, k % NR_BUFS, msg);
+    //printf("starting timer for station: %i, with value: %i. k: %i, k mod NR_BUFS: %i, msg: %s\n", station, timer_ids[k % NR_BUFS][station], k, k % NR_BUFS, msg);
 
     logLine(trace, "start_timer for seq_nr=%d timer_ids=[%d, %d, %d, %d] %s\n", k, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station], msg);
 
@@ -513,15 +513,15 @@ void stop_timer(seq_nr k, int station) {
     int timer_id;
     char *msg;
     timer_id = timer_ids[k][station];
-    printf("Stopping timer for station: %i, seq_nr: %i, timer_id: %i\n", station, k, timer_id);
+    //printf("Stopping timer for station: %i, seq_nr: %i, timer_id: %i\n", station, k, timer_id);
     logLine(trace, "stop_timer for seq_nr %d med id=%d\n", k, timer_id);
 
     if (StopTimer(timer_id, (void *) &msg)) {
         logLine(trace, "timer %d stoppet. msg: %s \n", timer_id, msg);
-        printf("        Stoppede timer :)\n");
+        //printf("        Stoppede timer :)\n");
         free(msg);
     } else {
-        printf("        Kunne ikke stoppe timer :(\n");
+        //printf("        Kunne ikke stoppe timer :(\n");
         logLine(trace, "timer %d kunne ikke stoppes. Maaske er den timet ud?timer_ids=[%d, %d, %d, %d] \n", timer_id, timer_ids[0][station], timer_ids[1][station], timer_ids[2][station], timer_ids[3][station]);
     }
 }
@@ -557,12 +557,12 @@ int get_ThisStation(){
 int find_Timer_ID(unsigned int timer_id){
     for (int j = 0; j < NR_BUFS; j++) {
         if (timer_id == ack_timer_id[j]){
-            printf("found j: %i\n", j);
+            //printf("found j: %i\n", j);
             return j;
         }
         for (int k = 0; k < NR_BUFS; k++) {
                 if (timer_id == timer_ids[j][k]){
-                    printf("found k: %i\n", k);
+                    //printf("found k: %i\n", k);
                     return k;
                 }
         }

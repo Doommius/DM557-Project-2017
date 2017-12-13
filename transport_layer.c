@@ -102,10 +102,6 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 notif->dest = remote_host;
                 notif->source = get_ThisStation();
 
-                printf("Creating message\n");
-                strcpy(notif->payload, "Hi");
-                printf("Created message\n");
-
                 FifoQueue queue;
                 queue = (FifoQueue) get_queue_TtoN();
 
@@ -120,15 +116,12 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                 printf("Waiting for listen\n");
                 //TODO check if we get reply if no, return error. -Mark
                 if (listen(local_ta)) {
-
-
                     connections[connection].state = established;
                     connections[connection].local_address = local_ta;
                     connections[connection].remote_address = remote_ta;
                     connections[connection].remote_host = remote_host;
                     connections[connection].id = connection;
                     connectionid = connection;
-
                     //TODO Load all the informaton about the connection into some kind of notif structure.
                     printf("Connection Established\n");
                     return connection;
@@ -146,13 +139,9 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
 /*
  * Disconnect the connection with the supplied id.
  * returns appropriate errorcode or 0 if successfull
- *
- * TODO; Do we need to clear the element from the connections array, -Mark
- * TODO; I'm thinking it'll be overwritten in the next iteration due to modulo calculation? -Mark
- * TODO: Do we need to wait for reply from connection we are killing? -Mark
  */
 int disconnect(int connection_id) {
-    printf("Waiting for lock\n");
+    //printf("Waiting for lock\n");
     Lock(transport_layer_lock);
     printf("Disconnecting %i from %i\n", get_ThisStation(), connection_id);
     tpdu *t;
@@ -166,7 +155,7 @@ int disconnect(int connection_id) {
 
     connections[connection_id].state = disconn;
 
-    t->type = clear_conf; //TODO maybe make custom type? -Mark
+    t->type = clear_conf;
     t->destport = connections[connection_id].remote_address;
 
     copyTPDUtoSegment(t, s);
@@ -215,12 +204,9 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
                                 strcat(msg, t->payload);
                             }
                         }
-
                         //Recreated message, return success
                         memcpy(buf, msg, strlen(msg));
-
                         connections[connectionid].state = established;
-
                         return 1;
                     }
                 }
@@ -248,7 +234,7 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
 
         num_packets = (bytes / TPDU_PAYLOAD_SIZE) + 1;
 
-        printf("Number of package we need to send: %i\n", num_packets);
+        printf("Number of packages we need to send: %i\n", num_packets);
 
         int overhead;
         overhead = (bytes % TPDU_PAYLOAD_SIZE);
@@ -275,13 +261,11 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
 
         //TODO find a way to number what part of the message we are sending, so we can rebuild it later
         for (int i = 0; i < num_packets; i++) {
-
             segment *s2;
             s2 = (segment *) malloc(sizeof(segment));
 
             tpdu *t2;
             t2 = (tpdu *) malloc(sizeof(tpdu));
-
 
             if (i < num_packets - 1) {
                 memcpy(t2->payload, buf + i * TPDU_PAYLOAD_SIZE, TPDU_PAYLOAD_SIZE);
@@ -344,7 +328,7 @@ void transport_layer_loop(void) {
     s = (segment *) malloc(sizeof(segment));
 
     long int events_we_handle;
-    events_we_handle = DATA_FOR_TRANSPORT_LAYER | DATA_FROM_APPLICATION_LAYER;
+    events_we_handle = DATA_FOR_TRANSPORT_LAYER;
 
     while (true) {
         Wait(&event, events_we_handle);
@@ -427,7 +411,6 @@ void transport_layer_loop(void) {
                         }
                         break;
 
-                        //TODO Should we send a response back?
                     case data_notiff:
                         //Notification for how many parts the message is split up in
                         printf("Notification for data\n");
@@ -438,10 +421,6 @@ void transport_layer_loop(void) {
 
                 DeleteFQE(e);
                 Unlock(transport_layer_lock);
-                break;
-
-            case DATA_FROM_APPLICATION_LAYER:
-                printf("DATA FROM APPLICATION LAYER");
                 break;
         }
     }
@@ -476,7 +455,7 @@ void copyTPDUtoSegment(tpdu *t, segment *s){
     s->data = *t2;
     s->dest = t2->dest;
     s->source = t2->source;
-    printf("sending segment to: %i, from %i\n", s->dest, s->source);
+    //printf("sending segment to: %i, from %i\n", s->dest, s->source);
     free(t);
 }
 

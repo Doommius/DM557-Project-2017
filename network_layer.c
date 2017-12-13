@@ -184,7 +184,7 @@ void network_layer_main_loop() {
                     break;
                 }
 
-                printf("s dest: %i, s source: %i, tpdu dest: %i, d gD: %i, d gS: %i\n", d2->data.dest, d2->data.source, d2->data.data.dest, d2->globalDest, d2->globalSource);
+                //printf("s dest: %i, s source: %i, tpdu dest: %i, d gD: %i, d gS: %i\n", d2->data.dest, d2->data.source, d2->data.data.dest, d2->globalDest, d2->globalSource);
 
                 printf("GLOBALDESTINATION: %i\n", d2->globalDest);
 
@@ -198,6 +198,7 @@ void network_layer_main_loop() {
                     p2->dest = d2->globalDest;
                     */
 
+                    printf("Got message that was for us: %i, from : %i\n", ThisStation, d2->globalSource);
 
                     EnqueueFQ(NewFQE((void *) &(d2->data)), from_queue);
                     printf("Enqueuet package til transport lag\n");
@@ -224,7 +225,7 @@ void network_layer_main_loop() {
                 Lock(network_layer_lock);
                 for_queue = (FifoQueue) get_queue_TtoN();
 
-                printf("Is queue empty? %i\n", EmptyFQ(for_queue));
+                //printf("Is queue empty? %i\n", EmptyFQ(for_queue));
                 datagram *d;
                 segment *s;
 
@@ -235,7 +236,7 @@ void network_layer_main_loop() {
 
                 dequeueSegment(s, for_queue);
 
-                printf("Fik dequeuet, message: %s\n", s->data.payload);
+                //printf("Fik dequeuet, message: %s\n", s->data.payload);
 
 
                 //printf("dequeuet segment, fra: %i, til %i, msg: %s\n", p->source, p->dest, p->data);
@@ -281,9 +282,9 @@ void network_layer_main_loop() {
  */
 void signal_link_layer_if_allowed(int address, FifoQueue queue) {
 
-    printf("Signal link layer?\n");
+    //printf("Signal link layer?\n");
     if (!EmptyFQ(queue) && network_layer_enabled[address])  {
-        printf("Signalling link layer\n");
+        //printf("Signalling link layer\n");
         Signal(NETWORK_LAYER_READY, NULL);
     }
 }

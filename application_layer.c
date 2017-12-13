@@ -14,6 +14,7 @@ void Station1_application_layer(void) {
     msg = "Hello World, i am a program";
     stringLen = strlen(msg) + 1;
     sleep(2);
+    printf("----------Connecting----------\n");
     connect(dest, 20, 20);
     sleep(2);
     printf("----------Sending----------\n");
