@@ -77,6 +77,8 @@ void selective_repeat(void);
 
 int get_ThisStation();
 
+int find_Timer_ID(unsigned int timer_id);
+
 FifoQueue get_from_queue();
 
 FifoQueue get_for_queue();

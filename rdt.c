@@ -420,25 +420,9 @@ void selective_repeat() {
                 int test;
                 test = -1;
                 printf("finding ID\n");
-                for (int j = 0; j < NR_BUFS; j++) {
-                    //printf("%i\n", ack_timer_id[j]);
-                    if (timer_id == ack_timer_id[j]){
-                        test = j;
-                        printf("found j: %i\n", test);
-                        break;
-                    } else {
-                        for (int k = 0; k < NR_BUFS; k++) {
-                            //printf(" %i\n", timer_ids[j][k]);
-                            if (timer_id == timer_ids[j][k]){
-                                test = k;
-                                printf("found k: %i\n", test);
-                                break;
-                            }
-                        }
-                    }
-                }
+                test = find_Timer_ID(timer_id);
 
-                printf("Timer ID: %i, ack_timer_id: %i, r.dest: %i, test: %i, ack_timer_id (test): %i, r.info.globalsource: %i\n", timer_id, ack_timer_id[r.dest], r.dest, test, ack_timer_id[test], r.info.globalSource);
+                //printf("Timer ID: %i, ack_timer_id: %i, r.dest: %i, test: %i, ack_timer_id (test): %i, r.info.globalsource: %i, last_station: %i, ack_timer_id (ls): %i\n", timer_id, ack_timer_id[r.dest], r.dest, test, ack_timer_id[test], r.info.globalSource, last_station, ack_timer_id[last_station]);
 
                 last_station = test;
                 if(test != -1) {
@@ -567,6 +551,23 @@ void stop_ack_timer(int station) {
 
 int get_ThisStation(){
     return ThisStation;
+}
+
+//Search through all timers to find the appropriate timer.
+int find_Timer_ID(unsigned int timer_id){
+    for (int j = 0; j < NR_BUFS; j++) {
+        if (timer_id == ack_timer_id[j]){
+            printf("found j: %i\n", j);
+            return j;
+        }
+        for (int k = 0; k < NR_BUFS; k++) {
+                if (timer_id == timer_ids[j][k]){
+                    printf("found k: %i\n", k);
+                    return k;
+                }
+        }
+    }
+    return -1;
 }
 
 

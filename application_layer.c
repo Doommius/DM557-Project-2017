@@ -10,7 +10,7 @@ int stringLen;
 void Station1_application_layer(void) {
     char *msg;
     int dest;
-    dest = 4;
+    dest = 2;
     msg = "Hello World, i am a program";
     stringLen = strlen(msg) + 1;
     sleep(2);

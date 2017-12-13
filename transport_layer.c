@@ -41,6 +41,7 @@ int listen(transport_address local_address) {
     FifoQueueEntry e;
 
     long int events_we_handle = CONNECTION_REPLY; //probably not, should be changed.
+    connections[connectionid].state = waiting;
 
     while (true) {
 
@@ -90,19 +91,19 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
 
                 printf("Found empty connection\n");
                 Lock(transport_layer_lock);
-                tpdu *data = malloc(sizeof(tpdu));
+                tpdu *notif = malloc(sizeof(tpdu));
 
                 segment *s;
                 s = (segment *) malloc(sizeof(segment));
 
-                data->type = call_req;
-                data->returnport = local_ta;
-                data->destport = remote_ta;
-                data->dest = remote_host;
-                data->source = get_ThisStation();
+                notif->type = call_req;
+                notif->returnport = local_ta;
+                notif->destport = remote_ta;
+                notif->dest = remote_host;
+                notif->source = get_ThisStation();
 
                 printf("Creating message\n");
-                strcpy(data->payload, "Hi");
+                strcpy(notif->payload, "Hi");
                 printf("Created message\n");
 
                 FifoQueue queue;
@@ -110,7 +111,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
 
                 //Request Connection
 
-                copyTPDUtoSegment(data, s);
+                copyTPDUtoSegment(notif, s);
 
                 EnqueueFQ(NewFQE((void *) s), queue);
                 Signal(DATA_FROM_TRANSPORT_LAYER, NULL);
@@ -128,7 +129,7 @@ int connect(host_address remote_host, transport_address local_ta, transport_addr
                     connections[connection].id = connection;
                     connectionid = connection;
 
-                    //TODO Load all the informaton about the connection into some kind of data structure.
+                    //TODO Load all the informaton about the connection into some kind of notif structure.
                     printf("Connection Established\n");
                     return connection;
                 }
@@ -186,6 +187,7 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
 
 
     long int events_we_handle = DATA_FOR_APPLICATION_LAYER;
+    connections[connectionid].state = receiving;
 
     char *msg;
     msg = malloc(bufsize);
@@ -216,10 +218,14 @@ int receive(host_address remote_host, unsigned char *buf, unsigned int *bufsize)
 
                         //Recreated message, return success
                         memcpy(buf, msg, strlen(msg));
+
+                        connections[connectionid].state = established;
+
                         return 1;
                     }
                 }
                 //No connection, return 0
+                connections[connectionid].state = established;
                 return 0;
                 break;
         }
@@ -307,10 +313,11 @@ int send(int connection_id, unsigned char *buf, unsigned int bytes) {
 
         }
 
-
+        connections[connection_id].state = established;
         return 1;
     }
     //Error - No connection, so we don't send
+    connections[connection_id].state = established;
     return -1;
 
 }
